@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rkfitness/customWidgets/weekdays.dart';
+import 'package:rkfitness/customeWidAndFun.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
@@ -12,11 +14,49 @@ class HomePage extends StatefulWidget {
 
 }
 class _HomePage extends State<HomePage>{
+  Set<Days> _selectedDay = {};
+  CustomeWidAndFun mywidget = new CustomeWidAndFun();
   String tempImageUrl = "https://tenor.com/view/supino-gif-1051970891886466370";
+  void initState() {
+    super.initState();
+    _selectedDay = {mywidget.getCurrentDay()};
+  }
   Widget build(BuildContext context){
     return Scaffold(
-    appBar: PreferredSize(preferredSize: Size.fromHeight(100) , child: rkuAppBar(context)),
-        body: workout(tempImageUrl,"Jeel"),
+    appBar: PreferredSize(preferredSize: Size.fromHeight(100) ,
+        child: rkuAppBar(context)),
+        body: Column(
+          children: [
+            SizedBox(height: 5),
+            Text("Scheduel's Days",style: TextStyle(fontSize: 20),),
+            SizedBox(height: 5,),
+            Weekdays(
+              selectedDay: _selectedDay,
+            ),
+            SizedBox(height: 5,),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children:[ Text.rich(
+                  mywidget.redText("Cardio")
+                ),
+                  TextButton(onPressed: null, child: Text("see all",style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black
+                  ),))
+                ],
+              ),
+            ),
+            ListView.builder(
+              itemCount: 5,
+                itemBuilder: (context,index)
+            {
+              return mywidget.workout(tempImageUrl, "exerciseName");
+            }
+            )
+          ],
+        )
     );
   }
   //App bar Created by  Jeel
@@ -71,47 +111,5 @@ class _HomePage extends State<HomePage>{
       ),
     );
   }
-  //Widget created by Dhruvil
-  Widget workout(String imagePath, String exerciseName) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16.0),
-      child: Container(
-        height: 250,
-        width: 200,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          image: DecorationImage(
-            image: NetworkImage(imagePath),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(16.0),
-                  bottomRight: Radius.circular(16.0),
-                ),
-              ),
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                exerciseName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // mywidget.workout(tempImageUrl,"Jeel"),
 }
