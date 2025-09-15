@@ -48,12 +48,16 @@ class _HomePage extends State<HomePage>{
                 ],
               ),
             ),
-            ListView.builder(
-              itemCount: 5,
-                itemBuilder: (context,index)
-            {
-              return mywidget.workout(tempImageUrl, "exerciseName");
-            }
+            Expanded(
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                shrinkWrap: true,
+                itemCount: 5,
+                  itemBuilder: (context,index)
+              {
+                return mywidget.workout(tempImageUrl, "exerciseName");
+              }
+              ),
             )
           ],
         )
