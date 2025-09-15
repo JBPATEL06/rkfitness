@@ -25,41 +25,82 @@ class _HomePage extends State<HomePage>{
     return Scaffold(
     appBar: PreferredSize(preferredSize: Size.fromHeight(100) ,
         child: rkuAppBar(context)),
-        body: Column(
-          children: [
-            SizedBox(height: 5),
-            Text("Scheduel's Days",style: TextStyle(fontSize: 20),),
-            SizedBox(height: 5,),
-            Weekdays(
-              selectedDay: _selectedDay,
-            ),
-            SizedBox(height: 5,),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children:[ Text.rich(
-                  mywidget.redText("Cardio")
-                ),
-                  TextButton(onPressed: null, child: Text("see all",style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black
-                  ),))
-                ],
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(height: 5),
+              Text("Scheduel's Days",style: TextStyle(fontSize: 20),),
+              SizedBox(height: 5,),
+              Weekdays(
+                selectedDay: _selectedDay,
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                itemCount: 5,
-                  itemBuilder: (context,index)
-              {
-                return mywidget.workout(tempImageUrl, "exerciseName");
-              }
+              SizedBox(height: 5,),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children:[ Text.rich(
+                    mywidget.redText("Cardio")
+                  ),
+                    TextButton(onPressed: null, child: Text("see all",style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black
+                    ),))
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 250,
+                child: Expanded(
+
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 5,
+                      itemBuilder: (context,index)
+                  {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: mywidget.workout(tempImageUrl, "exerciseName"),
+                    );
+                  }
+                  ),
+                ),
+              ),
+              SizedBox(height: 5,),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children:[
+                    Text.rich(
+                      mywidget.redText("Exercise")
+                  ),
+                    TextButton(onPressed: null, child: Text("see all",style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black
+                    ),))
+                  ],
+                ),
+              ),
+            SizedBox(
+              height: 250,
+              child: Expanded(
+
+                child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 5,
+                    itemBuilder: (context,index)
+                    {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: mywidget.workout(tempImageUrl, "exerciseName"),
+                      );
+                    }
+                ),
               ),
             )
-          ],
+            ],
+          ),
         )
     );
   }
