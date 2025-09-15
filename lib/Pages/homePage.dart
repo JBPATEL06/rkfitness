@@ -73,37 +73,45 @@ class _HomePage extends State<HomePage>{
   }
   //Widget created by Dhruvil
   Widget workout(String imagePath, String exerciseName) {
-    return Container(
-      height: 250,
-      width: 200,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.rectangle,
-        image: DecorationImage(
-          image: NetworkImage(imagePath),
-          fit: BoxFit.cover,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16.0),
+      child: Container(
+        height: 250,
+        width: 200,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          image: DecorationImage(
+            image: NetworkImage(imagePath),
+            fit: BoxFit.cover,
+          ),
         ),
-      ),
-      child: Stack(
-
-        alignment: Alignment.bottomCenter,
-        children: [
-          Container(
-            width: double.infinity,
-            color: Colors.black.withOpacity(0.5),
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              exerciseName,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(16.0),
+                  bottomRight: Radius.circular(16.0),
+                ),
+              ),
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                exerciseName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 }
