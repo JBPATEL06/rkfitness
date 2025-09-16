@@ -80,5 +80,13 @@ class CustomeWidAndFun {
 
     return Days.values[weekday - 1];
   }
+  double phoneHieght(BuildContext context){
+    double devicehieght = MediaQuery.of(context).size.height;
+    return devicehieght;
+  }
+  double phoneWidth(BuildContext context){
+    double deviceWidth = MediaQuery.of(context).size.width;
+    return deviceWidth;
+  }
 
 }
