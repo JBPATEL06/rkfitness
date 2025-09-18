@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:rkfitness/AdminMaster/AdminworkoutPage.dart';
+import 'package:rkfitness/AdminMaster/addminhomePage.dart';
+import 'package:rkfitness/AdminMaster/totalUser.dart';
 import 'package:rkfitness/Pages/bmiPage.dart';
 import 'package:rkfitness/Pages/homePage.dart';
 import 'package:rkfitness/Pages/schedualPage.dart';
 import 'package:rkfitness/Pages/workoutPage.dart';
 
-class UserDashBoard extends StatefulWidget {
-  State<UserDashBoard> createState() {
-    return _UserDashBoard();
+import 'adminCalender.dart';
+
+class AdminDashboard extends StatefulWidget {
+  State<AdminDashboard> createState() {
+    return _AdminDashboard();
   }
 }
 
-class _UserDashBoard extends State<UserDashBoard> {
+class _AdminDashboard extends State<AdminDashboard> {
 
   int pageNo=0;
   List<Widget> PageList = [
-    HomePage(),
-    WorkoutPage(),
-    SchedualPage(userEmail: 'bhandrerijell8@gmail.com',),
-    BmiPage()
+   AdminHome(),
+    AdminWorkoutPage(),
+    CalendarPage(),
+    UsersPage()
   ];
   @override
   Widget build(BuildContext context) {
@@ -41,8 +46,8 @@ class _UserDashBoard extends State<UserDashBoard> {
             items: [
               BottomNavigationBarItem(icon: Icon(Icons.home),label: "Home"),
               BottomNavigationBarItem(icon: Icon(Icons.fitness_center_sharp),label: "Workout"),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_sharp),label: "Schedual"),
-              BottomNavigationBarItem(icon: Icon(Icons.calculate_sharp),label: "Bmi")
+              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_sharp),label: "Calender"),
+              BottomNavigationBarItem(icon: Icon(Icons.calculate_sharp),label: "Users")
       ],
 
 

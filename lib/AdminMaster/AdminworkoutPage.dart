@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rkfitness/customeWidAndFun.dart';
 
-class WorkoutPage extends StatelessWidget {
-  const WorkoutPage({super.key});
+import 'adminAddWorkout.dart';
+
+class AdminWorkoutPage extends StatelessWidget {
+  const AdminWorkoutPage({super.key});
 
   // A helper function to get the screen width
   // A helper function to get the screen height
@@ -37,7 +39,7 @@ class WorkoutPage extends StatelessWidget {
       itemCount: workouts.length,
       itemBuilder: (context, index) {
         final workoutData = workouts[index];
-        return mywidget.workout12(context, workoutData['image']!, workoutData['name']!);
+        return mywidget.workout(context, workoutData['image']!, workoutData['name']!);
       },
     );
   }
@@ -48,12 +50,11 @@ class WorkoutPage extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('WORKOUT', style: TextStyle(color: Colors.white)),
+          title: const Text('WORKOUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           centerTitle: true,
           backgroundColor: Colors.red[700],
-         
-          bottom: TabBar(
 
+          bottom: TabBar(
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.grey[400],
@@ -69,6 +70,14 @@ class WorkoutPage extends StatelessWidget {
             _buildWorkoutGrid(context, 'Exercise'),
           ],
         ),
+        floatingActionButton: FloatingActionButton(onPressed: (){
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddWorkoutPage()),
+          );
+        },backgroundColor: Colors.white70,
+          child: Icon(Icons.add,color: Colors.red,),),
       ),
     );
   }

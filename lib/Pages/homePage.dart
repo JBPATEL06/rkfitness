@@ -2,12 +2,14 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rkfitness/Pages/profilepage.dart';
 import 'package:rkfitness/customWidgets/weekdays.dart';
 import 'package:rkfitness/customeWidAndFun.dart';
 import 'package:rkfitness/models/scheduled_workout_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
+import 'Notification.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -18,7 +20,7 @@ class _HomePage extends State<HomePage>{
 
   Set<Days> _selectedDay = {};
   CustomeWidAndFun mywidget = new CustomeWidAndFun();
-  String tempImageUrl = "https://tenor.com/view/supino-gif-1051970891886466370";
+  String tempImageUrl = "https://www.gifss.com/deportes/atletismo/images/atleta-26.gif";
   void initState() {
     super.initState();
     _selectedDay = {mywidget.getCurrentDay()};
@@ -62,7 +64,7 @@ class _HomePage extends State<HomePage>{
                   {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: mywidget.workout(context,tempImageUrl, "exerciseName"),
+                      child: mywidget.workout12(context,tempImageUrl, "exerciseName"),
                     );
                   }
                   ),
@@ -115,19 +117,29 @@ class _HomePage extends State<HomePage>{
         color: Colors.red[800],
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 24.0,
-              backgroundColor: Colors.grey,
-              child: ClipOval(
-                child: Image.network(
-                  _ProfilePic,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Icon(Icons.person);
-                  },
+            GestureDetector(
+              onTap: () {
+                // Navigate to the ProfilePage
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 24.0,
+                backgroundColor: Colors.grey,
+                child: ClipOval(
+                  child: Image.network(
+                    _ProfilePic,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Icon(Icons.person);
+                    },
+                  ),
                 ),
               ),
             ),
@@ -145,7 +157,15 @@ class _HomePage extends State<HomePage>{
               ],
             ),
             Spacer(), // pushes icon to right
-            Icon(Icons.notifications, color: Colors.white),
+            GestureDetector(
+    onTap: () {
+    // Navigate to the ProfilePage
+    Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const NotificationPage()),
+    );
+    },
+                child: Icon(Icons.notifications, color: Colors.white)),
 
           ],
         ),
