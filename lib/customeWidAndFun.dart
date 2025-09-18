@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'Pages/homePage.dart';
 import 'customWidgets/weekdays.dart';
 class CustomeWidAndFun {
 
   //Widget created by Dhruvil for show workout in mini container
-  Widget workout(String imagePath, String exerciseName) {
+  Widget workout(BuildContext context,String imagePath, String exerciseName) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
       child: Container(
-        height: 250,
-        width: 200,
+        height: phoneHieght(context)*0.30,
+        width: phoneWidth(context)*0.45,
         decoration: BoxDecoration(
           color: Colors.white,
           image: DecorationImage(
@@ -80,6 +81,12 @@ class CustomeWidAndFun {
 
     return Days.values[weekday - 1];
   }
+
+String stringgetCurrentDay() {
+  DateTime now = DateTime.now();
+  return DateFormat('EEEE').format(now); // returns full day name like "Monday"
+}
+
   double phoneHieght(BuildContext context){
     double devicehieght = MediaQuery.of(context).size.height;
     return devicehieght;

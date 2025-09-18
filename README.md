@@ -23,8 +23,8 @@ Enum
 Segment button
 TExtSpan
 spacer
+josn model class
 
 need to fix
 
 add grid list view in excercise
-shared prefference

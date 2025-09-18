@@ -11,159 +11,68 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final supabase = Supabase.instance.client;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
 
-  Future<void> _validateAndLogin() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email cannot be empty.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password cannot be empty.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    final emailRegex = RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-    if (!emailRegex.hasMatch(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email address.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters long.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      return;
-    }
+  Future<void> login() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
 
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
-        email: email,
-        password: password,
+      final response = await supabase.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
-      if (mounted) {
 
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => UserDashBoard(),
-          ),
-        );
-      }
-    } on AuthException catch (e) {
-      if (e.message == 'Invalid login credentials') {
-        try {
-          await Supabase.instance.client.auth.signUp(
-            email: email,
-            password: password,
-            emailRedirectTo: null,
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('New account created and logged in!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          if (mounted) {
+      Navigator.of(context).pop(); // Close loading dialog
 
-            Future<void> setLoggedIn() async
-            {
-              SharedPreferences pref = await SharedPreferences.getInstance();
-              pref.setBool("login", true);
-            }
-            setLoggedIn();
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) =>  UserDashBoard(),
-              ),
-            );
-          }
-        } on AuthException catch (signUpError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(signUpError.message),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
+      // Success
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('An unexpected error occurred. Please try again.'),
-          backgroundColor: Colors.red,
+          backgroundColor: Colors.green,
+          content: Text("Login successful!"),
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+
+      if (response.user != null) {
+        final session = Supabase.instance.client.auth.currentSession;
+        debugPrint("🔐 Session: ${response.session?.accessToken}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserDashBoard()),
+        );
+      } else {
+        debugPrint("Error in session set: ${response.user}");
       }
+      // Navigate to Home
+    } on AuthException catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+      debugPrint("Login error code: ${e.code}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text(e.message)),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      debugPrint("Unexpected Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text("An unexpected error occurred."),
+        ),
+      );
+    }
+
+    @override
+    void dispose() {
+      _emailController.dispose();
+      _passwordController.dispose();
+      super.dispose();
     }
   }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,17 +154,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                     ),
-                    onPressed: _isLoading ? null : _validateAndLogin,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
+                    onPressed: login,
+                    child: const Text(
                             "Login",
                             style: TextStyle(fontSize: 16, color: Colors.white),
                           ),

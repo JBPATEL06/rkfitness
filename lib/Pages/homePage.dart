@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rkfitness/customWidgets/weekdays.dart';
 import 'package:rkfitness/customeWidAndFun.dart';
+import 'package:rkfitness/models/scheduled_workout_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
@@ -61,7 +62,7 @@ class _HomePage extends State<HomePage>{
                   {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: mywidget.workout(tempImageUrl, "exerciseName"),
+                      child: mywidget.workout(context,tempImageUrl, "exerciseName"),
                     );
                   }
                   ),
@@ -85,21 +86,20 @@ class _HomePage extends State<HomePage>{
               ),
             SizedBox(
               height: 250,
-              child: Expanded(
-
-                child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 5,
-                    itemBuilder: (context,index)
-                    {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: mywidget.workout(tempImageUrl, "exerciseName"),
-                      );
-                    }
-                ),
+             child: workoutStream(context),
+                // child: ListView.builder(
+                //     scrollDirection: Axis.horizontal,
+                //     itemCount: 5,
+                //     itemBuilder: (context,index)
+                //     {
+                //       return Padding(
+                //         padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                //         child: mywidget.workout(context,tempImageUrl, "exerciseName"),
+                //       );
+                //     }
+                // ),
+                
               ),
-            )
             ],
           ),
         )
@@ -147,11 +147,138 @@ class _HomePage extends State<HomePage>{
             ),
             Spacer(), // pushes icon to right
             Icon(Icons.notifications, color: Colors.white),
+
           ],
         ),
       ),
     );
   }
 
+
+// Widget excesizeGrid(BuildContext context)
+// {
+
+//   Days day = mywidget.getCurrentDay();
+//   final userId = Supabase.instance.client.auth.currentUser?.id;
+//   return StreamBuilder(
+//     stream: Supabase.instance.client
+//       .from('"schedual workout"') // <-- wrap table name in quotes
+//       .stream(primaryKey: ['id'])
+//       .eq('user_id', userId)
+//       .eq('day_of_week', day),
+//     builder: (context , snapshot)
+//     {
+//         if (snapshot.connectionState == ConnectionState.waiting) {
+//             return const Center(child: CircularProgressIndicator());
+//           }
+
+//           if (!snapshot.hasData || snapshot.data! == null) {
+//             return const Center(child: Text('No exercise Found'));
+//           }
+
+//           final workouts = snapshot.data!;
+//            return GridView.builder(
+//             padding: const EdgeInsets.all(16),
+//             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+//               crossAxisCount: 2,
+//               childAspectRatio: 0.6,
+//               mainAxisSpacing: 10,
+//               crossAxisSpacing: 10,
+//             ),
+//             itemCount: workouts.length,
+//             itemBuilder: (context, index) {
+//               final workoutsIndex = workouts[index];
+//               return mywidget.workout(context, workoutsIndex['Gif Path'] , workoutsIndex['Workout Name']);
+//             }
+//           );
+//     }
+  
+//   );
+// }
+Widget workoutStream(BuildContext context) {
+  final userEmail = Supabase.instance.client.auth.currentUser?.email ?? '';
+  final day = mywidget.stringgetCurrentDay();
+
+  return FutureBuilder<List<Map<String, dynamic>>>(
+    future: _fetchTodaysWorkouts(userEmail, day),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      
+      if (snapshot.hasError) {
+        return Center(child: Text('Error: ${snapshot.error}'));
+      }
+
+      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return const Center(child: Text("No workouts found for today"));
+      }
+
+      final rows = snapshot.data!;
+
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.6,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+        ),
+        itemCount: rows.length,
+        itemBuilder: (context, index) {
+          final row = rows[index];
+          
+          return mywidget.workout(
+            context,
+            row['Gif Path'] ?? '',
+            row['Workout Name'] ?? '',
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<List<Map<String, dynamic>>> _fetchTodaysWorkouts(String email, String day) async {
+  try {
+    // Get scheduled workouts for user and day
+    final scheduleResponse = await Supabase.instance.client
+        .from('schedual workout')
+        .select('workout_id, order_in_day')
+        .filter('Gmail', 'eq', email)
+        .filter('day_of_week', 'eq', day)
+        .order('order_in_day');
+
+    if (scheduleResponse.isEmpty) {
+      return [];
+    }
+
+    // Get all workout details
+    final workoutIds = scheduleResponse.map((row) => row['workout_id']).toList();
+    final workoutResponse = await Supabase.instance.client
+        .from('Workout Table')
+        .select('*')
+        .filter('Workout id', 'in', '(${workoutIds.map((id) => '"$id"').join(',')})');
+
+    // Combine data maintaining order
+    final combinedData = <Map<String, dynamic>>[];
+    for (final schedule in scheduleResponse) {
+      final workoutId = schedule['workout_id'];
+      final workout = workoutResponse.firstWhere(
+        (w) => w['Workout id'] == workoutId,
+        orElse: () => <String, dynamic>{},
+      );
+      
+      if (workout.isNotEmpty) {
+        combinedData.add(workout);
+      }
+    }
+
+    return combinedData;
+  } catch (e) {
+    print('Error: $e');
+    return [];
+  }
+}
 // mywidget.workout(tempImageUrl,"Jeel"),
 }
