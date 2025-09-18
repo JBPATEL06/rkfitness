@@ -211,7 +211,7 @@ Widget workoutStream(BuildContext context) {
       }
 
       if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        return const Center(child: Text("No workouts found for today"));
+        return const Center(child: Text("No workouts for today"));
       }
 
       final rows = snapshot.data!;
@@ -245,7 +245,7 @@ Future<List<Map<String, dynamic>>> _fetchTodaysWorkouts(String email, String day
     final scheduleResponse = await Supabase.instance.client
         .from('schedual workout')
         .select('workout_id, order_in_day')
-        .filter('Gmail', 'eq', email)
+        .filter('user_id', 'eq',email )
         .filter('day_of_week', 'eq', day)
         .order('order_in_day');
 
