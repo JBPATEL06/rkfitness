@@ -95,16 +95,5 @@ String stringgetCurrentDay() {
     double deviceWidth = MediaQuery.of(context).size.width;
     return deviceWidth;
   }
-  Widget scheduallist(BuildContext context,String Name,String Type,String GifPath,dynamic Duration){
 
-    return ListTile(
-    leading: Container(
-      height: phoneHieght(context)*0.5,
-      width: phoneWidth(context)*0.2,
-      child: Image.network(GifPath),
-    ),
-      title: Text(Name,style: TextStyle(fontSize: 20,color: Colors.red),),
-      subtitle: Type == "Cardio" ? Text("Sets/Reps :" + "3/8") : Text("Duration" + "30 sec"),
-    );
-  }
 }
