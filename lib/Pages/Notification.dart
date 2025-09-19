@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:rkfitness/models/notification_model.dart';
 import 'package:rkfitness/supabaseMaster/notification_services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class NotificationPage extends StatelessWidget {
-   NotificationPage({super.key});
+class NotificationPage extends StatefulWidget {
+  const NotificationPage({super.key});
 
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
   // Create an instance of the NotificationService
-  final NotificationService _notificationService =  NotificationService();
+  final NotificationService _notificationService = NotificationService();
+  late Future<List<NotificationModel>> _notificationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationsFuture = _notificationService.getAllNotifications();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +38,7 @@ class NotificationPage extends StatelessWidget {
         centerTitle: false,
       ),
       body: FutureBuilder<List<NotificationModel>>(
-        future: _notificationService.getAllNotifications(),
+        future: _notificationsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

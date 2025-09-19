@@ -145,7 +145,7 @@ class _HomePage extends State<HomePage>{
                   // Navigate to the ProfilePage
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const NotificationPage()),
+                    MaterialPageRoute(builder: (context) => NotificationPage()),
                   );
                 },
                 child: Icon(Icons.notifications, color: Colors.white)),
