@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rkfitness/models/user_model.dart';
-import 'package:rkfitness/supabaseMaster/useServices.dart'; // Correctly import your UserService
+import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BmiPage extends StatefulWidget {
@@ -125,7 +125,7 @@ class _BmiPageState extends State<BmiPage> {
                       backgroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 30, vertical: 15)),
-                  child: const Text('Back'),
+                  child: const Text('Back',style: TextStyle(color: Colors.white),),
                 ),
                 ElevatedButton(
                   onPressed: _calculateBmi,
@@ -133,7 +133,7 @@ class _BmiPageState extends State<BmiPage> {
                       backgroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 30, vertical: 15)),
-                  child: const Text('Update'),
+                  child: const Text('Update',style:  TextStyle(color:Colors.white,)),
                 ),
               ],
             ),

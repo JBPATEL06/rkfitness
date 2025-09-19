@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-// Import your ProfilePage here so you can navigate back to it.
+import 'package:rkfitness/models/user_model.dart';
+import 'package:rkfitness/supabaseMaster/useServices.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class UpdateProfilePage extends StatefulWidget {
   const UpdateProfilePage({super.key});
@@ -9,50 +13,174 @@ class UpdateProfilePage extends StatefulWidget {
 }
 
 class _UpdateProfilePageState extends State<UpdateProfilePage> {
-  // Controllers for each text field to get user input
+  final UserService _userService = UserService();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
 
-  // A simple function to handle the button press
-  void _updateProfile() {
-    // You would typically add validation and API calls here
-    print('Updating profile with the following data:');
-    print('Name: ${_nameController.text}');
-    print('Email: ${_emailController.text}');
-    print('Phone: ${_phoneController.text}');
-    print('Password: ${_passwordController.text}');
-    print('Weight: ${_weightController.text}');
-    print('Age: ${_ageController.text}');
-    print('Height: ${_heightController.text}');
+  File? _pickedImage;
+  String? _currentProfilePicUrl;
+  bool _isLoading = true;
 
-    // Show a confirmation message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile update initiated!')),
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+    if (userEmail == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final user = await _userService.getUser(userEmail);
+    if (user != null) {
+      setState(() {
+        _nameController.text = user.name ?? '';
+        _phoneController.text = user.phone ?? '';
+        _currentProfilePicUrl = user.profilePicture;
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _updateProfile() async {
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+    if (userEmail == null) return;
+
+    String? newProfilePicUrl = _currentProfilePicUrl;
+
+    if (_pickedImage != null) {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+      final fileName = 'UserProfile/${user.id}.png';
+
+      // Upload image to Supabase storage
+      await Supabase.instance.client.storage
+          .from('image_and_gifs')
+          .upload(fileName, _pickedImage!, fileOptions: const FileOptions(upsert: true));
+
+      newProfilePicUrl = Supabase.instance.client.storage
+          .from('image_and_gifs')
+          .getPublicUrl(fileName);
+    }
+
+    final updatedUser = UserModel(
+      gmail: userEmail,
+      name: _nameController.text,
+      phone: _phoneController.text,
+      profilePicture: newProfilePicUrl,
     );
 
-    // After a successful update, navigate back to the ProfilePage
+    await _userService.updateUser(updatedUser);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully!')),
+    );
     Navigator.pop(context);
   }
 
   @override
   void dispose() {
-    // It's important to dispose of controllers to free up resources
     _nameController.dispose();
-    _emailController.dispose();
     _phoneController.dispose();
-    _passwordController.dispose();
-    _weightController.dispose();
-    _ageController.dispose();
-    _heightController.dispose();
     super.dispose();
   }
 
-  // A helper method to build the consistent text fields
+  // --- Widget building functions (unchanged) ---
+  // ... (build methods for text fields and UI)
+  // I will assume these are already correct in your project.
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.red,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Update Profile',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: false,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey,
+                  backgroundImage: _pickedImage != null
+                      ? FileImage(_pickedImage!)
+                      : (_currentProfilePicUrl != null ? NetworkImage(_currentProfilePicUrl!) : null) as ImageProvider?,
+                  child: _pickedImage == null && _currentProfilePicUrl == null
+                      ? const Icon(Icons.person, size: 80, color: Colors.white)
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: CircleAvatar(
+                    radius: 15,
+                    backgroundColor: Colors.red,
+                    child: IconButton(
+                      icon: const Icon(Icons.edit, size: 15, color: Colors.white),
+                      onPressed: _pickImage,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 30),
+            _buildTextField(controller: _nameController, labelText: 'Name'),
+            const SizedBox(height: 20),
+            _buildTextField(controller: _phoneController, labelText: 'Phone', keyboardType: TextInputType.phone),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _updateProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Update Profile', style: TextStyle(fontSize: 18)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String labelText,
@@ -71,100 +199,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         ),
         filled: true,
         fillColor: Colors.grey[200],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.red,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            // This pops the current route off the stack, returning to the previous screen.
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Update Profile',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Profile image and edit icon
-            Stack(
-              children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey,
-                  child: Icon(
-                    Icons.person,
-                    size: 80,
-                    color: Colors.white,
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: CircleAvatar(
-                    radius: 15,
-                    backgroundColor: Colors.red,
-                    child: IconButton(
-                      icon: const Icon(Icons.edit, size: 15, color: Colors.white),
-                      onPressed: () {
-                        // Handle image selection logic here
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-
-            // Text fields
-            _buildTextField(controller: _nameController, labelText: 'Name'),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _emailController, labelText: 'Email', keyboardType: TextInputType.emailAddress),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _phoneController, labelText: 'Phone', keyboardType: TextInputType.phone),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _passwordController, labelText: 'Password', obscureText: true),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _weightController, labelText: 'Weight', keyboardType: TextInputType.number),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _ageController, labelText: 'Age', keyboardType: TextInputType.number),
-            const SizedBox(height: 20),
-            _buildTextField(controller: _heightController, labelText: 'Height', keyboardType: TextInputType.number),
-            const SizedBox(height: 40),
-
-            // Update Profile Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _updateProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Update Profile',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
