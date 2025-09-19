@@ -3,18 +3,18 @@ import 'package:json_annotation/json_annotation.dart';
 part 'notification_model.g.dart';
 
 @JsonSerializable()
-class Notification {
-  final String id;
-  final String? tittle;
+class NotificationModel {
+  final int id;
+  final String? title;
   final String? description;
 
-  Notification({
+  NotificationModel({
     required this.id,
-    this.tittle,
+    this.title,
     this.description,
   });
 
-  factory Notification.fromJson(Map<String, dynamic> json) => _$NotificationFromJson(json);
+  factory NotificationModel.fromJson(Map<String, dynamic> json) => _$NotificationModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$NotificationToJson(this);
+  Map<String, dynamic> toJson() => _$NotificationModelToJson(this);
 }

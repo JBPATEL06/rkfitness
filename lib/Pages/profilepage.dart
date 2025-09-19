@@ -3,17 +3,57 @@ import 'package:rkfitness/Pages/bmiPage.dart';
 import 'package:rkfitness/Pages/changePassword.dart';
 import 'package:rkfitness/Pages/editProfile.dart';
 import 'package:rkfitness/Pages/user_dashboard.dart';
+import 'package:rkfitness/supabaseMaster/useServices.dart'; // Import your UserService
+import 'package:rkfitness/models/user_model.dart'; // Import your UserModel
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'CalenderPage.dart';
+import 'loginpage.dart';
 
-// Assuming you have a UserDashboard page to navigate back to
-// Make sure this file exists in your project
-
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final UserService _userService = UserService();
+  bool _isLoading = true;
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+    if (userEmail != null) {
+      final user = await _userService.getUser(userEmail);
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _signOut() async {
+    await Supabase.instance.client.auth.signOut();
+    // Navigate to the login page and remove all previous routes
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false,
+    );
+  }
+
   // A helper widget for the user stats columns
-  // Renamed to follow lowerCamelCase conventions
   static Widget _userStatColumn({required String label, required String value}) {
     return Column(
       children: [
@@ -56,6 +96,23 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Fallback values if user data is null
+    final user = _user;
+    final displayName = user?.gmail.split('@').first ?? 'Guest';
+    final userEmail = user?.gmail ?? 'N/A';
+    final weight = user?.weight?.toStringAsFixed(0) ?? 'N/A';
+    final height = user?.height?.toStringAsFixed(0) ?? 'N/A';
+    final age = user?.age?.toString() ?? 'N/A';
+    final profilePicUrl = user?.profilePicture ?? 'https://via.placeholder.com/150';
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.red,
@@ -64,11 +121,7 @@ class ProfilePage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () {
             // Navigate back to the UserDashboard page
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) =>  UserDashBoard(),
-              ),
-            );
+            Navigator.of(context).pop();
           },
         ),
         title: const Text(
@@ -98,26 +151,22 @@ class ProfilePage extends StatelessWidget {
                 child: Column(
                   children: [
                     // Profile image and user name
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
+                      backgroundImage: NetworkImage(profilePicUrl),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Bhanderi Jeel',
-                      style: TextStyle(
+                    Text(
+                      displayName,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Text(
-                      'jbhanderi@rku.ac.in',
-                      style: TextStyle(color: Colors.grey),
+                    Text(
+                      userEmail,
+                      style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
                     // User stats card
@@ -131,10 +180,9 @@ class ProfilePage extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            // The `const` keyword has been removed here to fix the error
-                            _userStatColumn(label: 'Weight', value: '67'),
-                            _userStatColumn(label: 'Height(cm)', value: '172'),
-                            _userStatColumn(label: 'Age', value: '20'),
+                            _userStatColumn(label: 'Weight', value: weight),
+                            _userStatColumn(label: 'Height(cm)', value: height),
+                            _userStatColumn(label: 'Age', value: age),
                           ],
                         ),
                       ),
@@ -146,7 +194,6 @@ class ProfilePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
                       );
-                      // Action for Update Profile
                     }),
                     const SizedBox(height: 10),
                     _buildActionButton(context, 'BMI Calculator', () {
@@ -154,7 +201,6 @@ class ProfilePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(builder: (context) => const BmiPage()),
                       );
-                      // Action for BMI Calculator
                     }),
                     const SizedBox(height: 10),
                     _buildActionButton(context, 'Calendar', () {
@@ -162,7 +208,6 @@ class ProfilePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(builder: (context) => const CalendarPage()),
                       );
-                      // Action for Calendar
                     }),
                     const SizedBox(height: 20),
                     // Bottom buttons
@@ -192,7 +237,7 @@ class ProfilePage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: _signOut,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           shape: RoundedRectangleBorder(

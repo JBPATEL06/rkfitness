@@ -1,36 +1,13 @@
 import 'package:flutter/material.dart';
-
-// Import your UserDashboard page here so you can navigate back to it.
-
-// Class to represent a single notification item
-class NotificationItem {
-  final String title;
-  final String subtitle;
-
-  NotificationItem({
-    required this.title,
-    required this.subtitle,
-  });
-}
-
-// Sample data for the notifications
-List<NotificationItem> notifications = [
-  NotificationItem(
-    title: 'New Cardio',
-    subtitle: 'Jumping Jack',
-  ),
-  NotificationItem(
-    title: 'New Exercise',
-    subtitle: 'Bench press',
-  ),
-  NotificationItem(
-    title: 'New Exercise',
-    subtitle: 'Squats',
-  ),
-];
+import 'package:rkfitness/models/notification_model.dart';
+import 'package:rkfitness/supabaseMaster/notification_services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotificationPage extends StatelessWidget {
-  const NotificationPage({super.key});
+   NotificationPage({super.key});
+
+  // Create an instance of the NotificationService
+  final NotificationService _notificationService =  NotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +17,6 @@ class NotificationPage extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            // This will navigate back to the previous screen, which should be the user dashboard.
             Navigator.pop(context);
           },
         ),
@@ -48,43 +24,59 @@ class NotificationPage extends StatelessWidget {
           'Notification',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        centerTitle: false, // Align title to the left
+        centerTitle: false,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: notifications.length,
-        itemBuilder: (context, index) {
-          final item = notifications[index];
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 16.0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+      body: FutureBuilder<List<NotificationModel>>(
+        future: _notificationService.getAllNotifications(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No new notifications.'));
+          }
+
+          final notifications = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final item = notifications[index];
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 16.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title ?? 'No Title',
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.description ?? 'No Description',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),

@@ -1,15 +1,15 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'workout_model.g.dart';
+part 'workout_table_model.g.dart';
 
 @JsonSerializable()
-class Workout {
+class WorkoutTableModel {
   @JsonKey(name: 'Workout id')
   final String workoutId;
   @JsonKey(name: 'Workout Name')
   final String workoutName;
   @JsonKey(name: 'Workout type')
-  final String? workoutType;
+  final String workoutType;
   @JsonKey(name: 'Workout Categor')
   final String? workoutCategory;
   final int? sets;
@@ -19,10 +19,10 @@ class Workout {
   final String? gifPath;
   final String? description;
 
-  Workout({
+  WorkoutTableModel({
     required this.workoutId,
     required this.workoutName,
-    this.workoutType,
+    required this.workoutType,
     this.workoutCategory,
     this.sets,
     this.reps,
@@ -31,7 +31,7 @@ class Workout {
     this.description,
   });
 
-  factory Workout.fromJson(Map<String, dynamic> json) => _$WorkoutFromJson(json);
+  factory WorkoutTableModel.fromJson(Map<String, dynamic> json) => _$WorkoutTableModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$WorkoutToJson(this);
+  Map<String, dynamic> toJson() => _$WorkoutTableModelToJson(this);
 }

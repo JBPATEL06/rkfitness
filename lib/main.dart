@@ -44,7 +44,7 @@ Future<void> main() async {
     //     colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
     //     useMaterial3: true,
     //   ),
-    return MaterialApp(home: session != null ? AdminDashboard() : LoginPage(),
+    return MaterialApp(home: session != null ? UserDashBoard() : LoginPage(),
     );
   }
 }

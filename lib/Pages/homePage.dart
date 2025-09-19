@@ -1,3 +1,5 @@
+// home_page.dart (updated code)
+
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -9,6 +11,7 @@ import 'package:rkfitness/models/scheduled_workout_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
+import '../models/workout_table_model.dart'; // Import your WorkoutTableModel
 import 'Notification.dart';
 
 class HomePage extends StatefulWidget {
@@ -26,9 +29,11 @@ class _HomePage extends State<HomePage>{
     _selectedDay = {mywidget.getCurrentDay()};
   }
   Widget build(BuildContext context){
+    final userEmail = Supabase.instance.client.auth.currentUser?.email ?? 'Guest';
+
     return Scaffold(
-    appBar: PreferredSize(preferredSize: Size.fromHeight(100) ,
-        child: rkuAppBar(context)),
+        appBar: PreferredSize(preferredSize: Size.fromHeight(100) ,
+            child: rkuAppBar(context, userEmail)),
         body: SingleChildScrollView(
           child: Column(
             children: [
@@ -44,11 +49,11 @@ class _HomePage extends State<HomePage>{
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children:[ Text.rich(
-                    mywidget.redText("Cardio")
+                      mywidget.redText("Cardio")
                   ),
                     TextButton(onPressed: null, child: Text("see all",style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black
+                        fontSize: 16,
+                        color: Colors.black
                     ),))
                   ],
                 ),
@@ -56,18 +61,7 @@ class _HomePage extends State<HomePage>{
               SizedBox(
                 height: 250,
                 child: Expanded(
-
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 5,
-                      itemBuilder: (context,index)
-                  {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: mywidget.workout12(context,tempImageUrl, "exerciseName"),
-                    );
-                  }
-                  ),
+                  child: _buildWorkoutList("Cardio"),
                 ),
               ),
               SizedBox(height: 5,),
@@ -77,8 +71,8 @@ class _HomePage extends State<HomePage>{
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children:[
                     Text.rich(
-                      mywidget.redText("Exercise")
-                  ),
+                        mywidget.redText("Exercise")
+                    ),
                     TextButton(onPressed: null, child: Text("see all",style: TextStyle(
                         fontSize: 16,
                         color: Colors.black
@@ -86,20 +80,9 @@ class _HomePage extends State<HomePage>{
                   ],
                 ),
               ),
-            SizedBox(
-              height: 250,
-             child: workoutStream(context),
-                // child: ListView.builder(
-                //     scrollDirection: Axis.horizontal,
-                //     itemCount: 5,
-                //     itemBuilder: (context,index)
-                //     {
-                //       return Padding(
-                //         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                //         child: mywidget.workout(context,tempImageUrl, "exerciseName"),
-                //       );
-                //     }
-                // ),
+              SizedBox(
+                height: 250,
+                child: _buildWorkoutList("Exercise"),
               ),
             ],
           ),
@@ -107,7 +90,7 @@ class _HomePage extends State<HomePage>{
     );
   }
   //App bar Created by  Jeel
-  Widget rkuAppBar(BuildContext context) {
+  Widget rkuAppBar(BuildContext context, String userEmail) {
     String _ProfilePic =
         "https://imgs.search.brave.com/Zl2Mr84zSJ2SZt1x9lWKLEE4Ec3ZNGMbqxD5UqNmU7k/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9wcmV2/aWV3LnJlZGQuaXQv/d2hhdHMteW91ci1m/YXZvcml0ZS1sdWZm/eS1pbWFnZS12MC1m/YTdveHZ4YmRqaWUx/LmpwZWc_d2lkdGg9/NTM1JmF1dG89d2Vi/cCZzPTdhYTUyNGY1/Y2ZmNzI0YzcxMjI0/NTIzYmMxNDhiMzFk/ZjMxNGRlYWE";
 
@@ -151,20 +134,20 @@ class _HomePage extends State<HomePage>{
                 Text("Welcome ,",
                     style: TextStyle(
                         fontSize: 20, color: Colors.white, fontWeight: FontWeight.w400)),
-                Text("_UserName",
+                Text(userEmail,
                     style: TextStyle(
                         fontSize: 18, color: Colors.white, fontWeight: FontWeight.w400)),
               ],
             ),
             Spacer(), // pushes icon to right
             GestureDetector(
-    onTap: () {
-    // Navigate to the ProfilePage
-    Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const NotificationPage()),
-    );
-    },
+                onTap: () {
+                  // Navigate to the ProfilePage
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationPage()),
+                  );
+                },
                 child: Icon(Icons.notifications, color: Colors.white)),
 
           ],
@@ -173,131 +156,94 @@ class _HomePage extends State<HomePage>{
     );
   }
 
+  // This is the new widget to build the list view for a given workout type
+  Widget _buildWorkoutList(String workoutType) {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final day = mywidget.stringgetCurrentDay();
 
-// Widget excesizeGrid(BuildContext context)
-// {
+    return FutureBuilder<List<WorkoutTableModel>>(
+      future: _fetchTodaysWorkouts(userId, day),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-//   Days day = mywidget.getCurrentDay();
-//   final userId = Supabase.instance.client.auth.currentUser?.id;
-//   return StreamBuilder(
-//     stream: Supabase.instance.client
-//       .from('"schedual workout"') // <-- wrap table name in quotes
-//       .stream(primaryKey: ['id'])
-//       .eq('user_id', userId)
-//       .eq('day_of_week', day),
-//     builder: (context , snapshot)
-//     {
-//         if (snapshot.connectionState == ConnectionState.waiting) {
-//             return const Center(child: CircularProgressIndicator());
-//           }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
 
-//           if (!snapshot.hasData || snapshot.data! == null) {
-//             return const Center(child: Text('No exercise Found'));
-//           }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("No workouts for today"));
+        }
 
-//           final workouts = snapshot.data!;
-//            return GridView.builder(
-//             padding: const EdgeInsets.all(16),
-//             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//               crossAxisCount: 2,
-//               childAspectRatio: 0.6,
-//               mainAxisSpacing: 10,
-//               crossAxisSpacing: 10,
-//             ),
-//             itemCount: workouts.length,
-//             itemBuilder: (context, index) {
-//               final workoutsIndex = workouts[index];
-//               return mywidget.workout(context, workoutsIndex['Gif Path'] , workoutsIndex['Workout Name']);
-//             }
-//           );
-//     }
-  
-//   );
-// }
-Widget workoutStream(BuildContext context) {
-  final userEmail = Supabase.instance.client.auth.currentUser?.email ?? '';
-  final day = mywidget.stringgetCurrentDay();
+        // Filter workouts by the specified type
+        final filteredWorkouts = snapshot.data!.where((workout) {
+          return workout.workoutType == workoutType;
+        }).toList();
 
-  return FutureBuilder<List<Map<String, dynamic>>>(
-    future: _fetchTodaysWorkouts(userEmail, day),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      
-      if (snapshot.hasError) {
-        return Center(child: Text('Error: ${snapshot.error}'));
-      }
+        if (filteredWorkouts.isEmpty) {
+          return Center(child: Text('No $workoutType workouts today'));
+        }
 
-      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        return const Center(child: Text("No workouts for today"));
-      }
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: filteredWorkouts.length,
+          itemBuilder: (context, index) {
+            final workout = filteredWorkouts[index];
+            final gifUrl = Supabase.instance.client.storage
+                .from('image_and_gifs')
+                .getPublicUrl(workout.gifPath ?? '');
 
-      final rows = snapshot.data!;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: mywidget.workout(
+                context,
+                gifUrl,
+                workout.workoutName,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
-      return GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.6,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-        ),
-        itemCount: rows.length,
-        itemBuilder: (context, index) {
-          final row = rows[index];
-          
-          return mywidget.workout(
-            context,
-            row['Gif Path'] ?? '',
-            row['Workout Name'] ?? '',
-          );
-        },
-      );
-    },
-  );
-}
-
-Future<List<Map<String, dynamic>>> _fetchTodaysWorkouts(String email, String day) async {
-  try {
-    // Get scheduled workouts for user and day
-    final scheduleResponse = await Supabase.instance.client
-        .from('schedual workout')
-        .select('workout_id, order_in_day')
-        .filter('user_id', 'eq',email )
-        .filter('day_of_week', 'eq', day)
-        .order('order_in_day');
-
-    if (scheduleResponse.isEmpty) {
+  Future<List<WorkoutTableModel>> _fetchTodaysWorkouts(String? userId, String day) async {
+    if (userId == null) {
       return [];
     }
+    try {
+      // 1. Fetch scheduled workout IDs using ScheduleWorkoutModel
+      final scheduleResponse = await Supabase.instance.client
+          .from('schedul workout table')
+          .select()
+          .filter('user_id', 'eq', userId)
+          .filter('day_of_week', 'eq', day)
+          .order('order_in_day');
 
-    // Get all workout details
-    final workoutIds = scheduleResponse.map((row) => row['workout_id']).toList();
-    final workoutResponse = await Supabase.instance.client
-        .from('Workout Table')
-        .select('*')
-        .filter('Workout id', 'in', '(${workoutIds.map((id) => '"$id"').join(',')})');
-
-    // Combine data maintaining order
-    final combinedData = <Map<String, dynamic>>[];
-    for (final schedule in scheduleResponse) {
-      final workoutId = schedule['workout_id'];
-      final workout = workoutResponse.firstWhere(
-        (w) => w['Workout id'] == workoutId,
-        orElse: () => <String, dynamic>{},
-      );
-      
-      if (workout.isNotEmpty) {
-        combinedData.add(workout);
+      if (scheduleResponse.isEmpty) {
+        return [];
       }
-    }
 
-    return combinedData;
-  } catch (e) {
-    print('Error: $e');
-    return [];
+      final workoutIds = scheduleResponse.map((row) => ScheduleWorkoutModel.fromJson(row).workoutId).toList();
+
+      // 2. Fetch workout details using WorkoutTableModel
+      final workoutResponse = await Supabase.instance.client
+          .from('Workout Table')
+          .select()
+          .filter('Workout id', 'in', '(${workoutIds.map((id) => '"$id"').join(',')})');
+
+      if (workoutResponse.isEmpty) {
+        return [];
+      }
+
+      // 3. Convert fetched data to WorkoutTableModel objects
+      final List<WorkoutTableModel> workouts = workoutResponse.map((data) => WorkoutTableModel.fromJson(data)).toList();
+      return workouts;
+
+    } catch (e) {
+      print('Error: $e');
+      return [];
+    }
   }
-}
-// mywidget.workout(tempImageUrl,"Jeel"),
 }

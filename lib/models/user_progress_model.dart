@@ -3,25 +3,26 @@ import 'package:json_annotation/json_annotation.dart';
 part 'user_progress_model.g.dart';
 
 @JsonSerializable()
-class UserProgress {
-  final String id;
+class UserProgressModel {
+  @JsonKey(name: 'Gmail id')
+  final String? gmailId;
   final String? day;
   @JsonKey(name: 'workout count')
   final int? workoutCount;
   @JsonKey(name: 'all complete')
   final bool? allComplete;
-  @JsonKey(name: 'time stamp')
-  final DateTime? timeStamp;
+  @JsonKey(name: 'Date')
+  final DateTime? date;
 
-  UserProgress({
-    required this.id,
+  UserProgressModel({
+    this.gmailId,
     this.day,
     this.workoutCount,
     this.allComplete,
-    this.timeStamp,
+    this.date,
   });
 
-  factory UserProgress.fromJson(Map<String, dynamic> json) => _$UserProgressFromJson(json);
+  factory UserProgressModel.fromJson(Map<String, dynamic> json) => _$UserProgressModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$UserProgressToJson(this);
+  Map<String, dynamic> toJson() => _$UserProgressModelToJson(this);
 }

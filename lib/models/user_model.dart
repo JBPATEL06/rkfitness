@@ -1,9 +1,11 @@
+// user_model.dart
+
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user_model.g.dart';
 
 @JsonSerializable()
-class User {
+class UserModel {
   final String gmail;
   final double? weight;
   final double? bmi;
@@ -16,7 +18,10 @@ class User {
   @JsonKey(name: 'Profile Picture')
   final String? profilePicture;
 
-  User({
+  // New field for user type
+  final String? userType;
+
+  UserModel({
     required this.gmail,
     this.weight,
     this.bmi,
@@ -26,9 +31,10 @@ class User {
     this.workoutTime,
     this.height,
     this.profilePicture,
+    this.userType, // Add the new field to the constructor
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$UserToJson(this);
+  Map<String, dynamic> toJson() => _$UserModelToJson(this);
 }
