@@ -183,8 +183,8 @@ class AdminHome extends StatelessWidget {
     // Dummy data for a specific workout section
     final List<Map<String, String>> workouts = [
       {'name': 'Elliptical Trainer', 'image': 'https://www.gifss.com/deportes/atletismo/images/atleta-26.gif'},
-      {'name': 'Treadmill Running', 'image': 'https://www.gifss.com/deportes/atletismo/images/atleta-26.gif'},
-      {'name': 'Stationary Cycling', 'image': 'https://www.gifss.com/deportes/atletismo/images/atleta-26.gif'},
+      {'name': 'Treadmill ', 'image': 'https://www.gifss.com/deportes/atletismo/images/atleta-26.gif'},
+      {'name': 'Stationary ', 'image': 'https://www.gifss.com/deportes/atletismo/images/atleta-26.gif'},
     ];
 
     return Column(
@@ -193,9 +193,8 @@ class AdminHome extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text.rich(
+              mywidget.redText(title)
             ),
             TextButton(
               onPressed: () {},
@@ -205,7 +204,8 @@ class AdminHome extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 200, // Fixed height for the horizontal list view
+          height: mywidget.phoneHieght(context)*0.35,
+          // Fixed height for the horizontal list view
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: workouts.length,

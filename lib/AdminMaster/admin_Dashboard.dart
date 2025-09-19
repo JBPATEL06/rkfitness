@@ -47,7 +47,7 @@ class _AdminDashboard extends State<AdminDashboard> {
               BottomNavigationBarItem(icon: Icon(Icons.home),label: "Home"),
               BottomNavigationBarItem(icon: Icon(Icons.fitness_center_sharp),label: "Workout"),
               BottomNavigationBarItem(icon: Icon(Icons.calendar_month_sharp),label: "Calender"),
-              BottomNavigationBarItem(icon: Icon(Icons.calculate_sharp),label: "Users")
+              BottomNavigationBarItem(icon: Icon(Icons.person),label: "Users")
       ],
 
 

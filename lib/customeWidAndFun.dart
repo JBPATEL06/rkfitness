@@ -81,6 +81,8 @@ class CustomeWidAndFun {
             fontWeight: FontWeight.bold,
           ),
         ),
+
+
       ],
     );
   }
@@ -120,15 +122,18 @@ class CustomeWidAndFun {
         );
       },
       child: ClipRRect(
+        
         borderRadius: BorderRadius.circular(16.0),
         child: Stack(
           children: [
             // The main container for the workout card
             Container(
-              height: phoneHieght(context) * 0.40,
+              margin: EdgeInsets.symmetric(vertical: 0,horizontal: 8),
+              height: phoneHieght(context) * 0.30,
               width: phoneWidth(context) * 0.45,
               decoration: BoxDecoration(
-                color: Colors.white70,
+                borderRadius: BorderRadius.circular(16.0),
+                color: Colors.white,
                 image: DecorationImage(
                   image: NetworkImage(imagePath),
                   fit: BoxFit.cover,
@@ -151,7 +156,7 @@ class CustomeWidAndFun {
                       exerciseName,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

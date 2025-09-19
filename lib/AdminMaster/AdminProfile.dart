@@ -11,6 +11,7 @@ class AdminProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.red,
         leading: IconButton(
@@ -27,6 +28,7 @@ class AdminProfilePage extends StatelessWidget {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
+
         child: Column(
           children: [
             // Top section with user info
@@ -71,15 +73,12 @@ class AdminProfilePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                border: Border.all(
+                  color: Colors.red,
+                  width: 2.0
+                ),
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white
               ),
               child:  Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -182,7 +181,7 @@ class AdminProfilePage extends StatelessWidget {
       BuildContext context,
       String label, {
         Color backgroundColor = Colors.red,
-        Color textColor = Colors.white70,
+        Color textColor = Colors.white,
         VoidCallback? onTap,
       }) {
     return Container(
@@ -201,11 +200,17 @@ class AdminProfilePage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(fontSize: 18, color: textColor),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 18, color: textColor),
+              ),
             ),
-            Icon(Icons.arrow_forward_ios, color: textColor),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Icon(Icons.arrow_forward_ios, color: textColor),
+            ),
           ],
         ),
       ),

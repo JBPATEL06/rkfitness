@@ -6,15 +6,8 @@ import 'adminAddWorkout.dart';
 class AdminWorkoutPage extends StatelessWidget {
   const AdminWorkoutPage({super.key});
 
-  // A helper function to get the screen width
-  // A helper function to get the screen height
-
-  // The workout widget you provided
-
-  // A helper function to build a grid of workouts
   Widget _buildWorkoutGrid(BuildContext context, String category) {
     CustomeWidAndFun mywidget = CustomeWidAndFun();
-    // Placeholder data for demonstration
     final List<Map<String, String>> workouts = category == 'Cardio'
         ? [
       {'name': 'Treadmill Running', 'image': 'https://www.gifss.com/deportes/atletismo/images/atleta-26.gif'},
@@ -31,10 +24,11 @@ class AdminWorkoutPage extends StatelessWidget {
 
     return GridView.builder(
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
+        mainAxisExtent: mywidget.phoneHieght(context)*0.35,
       ),
       itemCount: workouts.length,
       itemBuilder: (context, index) {
@@ -76,8 +70,8 @@ class AdminWorkoutPage extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (context) => const AddWorkoutPage()),
           );
-        },backgroundColor: Colors.white70,
-          child: Icon(Icons.add,color: Colors.red,),),
+        },backgroundColor: Colors.red,
+          child: Icon(Icons.add,color: Colors.white,),),
       ),
     );
   }
