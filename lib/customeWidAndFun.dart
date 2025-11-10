@@ -2,29 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rkfitness/AdminMaster/adminEditWorkout.dart';
 import 'package:rkfitness/Pages/fullWorkout.dart';
+import 'package:rkfitness/models/workout_table_model.dart'; // Import the model
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'Pages/homePage.dart';
 import 'customWidgets/weekdays.dart';
-class CustomeWidAndFun {
 
-  //Widget created by Dhruvil for show workout in mini container
-  Widget workout12(BuildContext context,String imagePath, String exerciseName) {
+class CustomeWidAndFun {
+  // UPDATED: This widget is now fully dynamic
+  Widget workout12(BuildContext context, WorkoutTableModel workout) {
+    final gifUrl = workout.gifPath != null
+        ? Supabase.instance.client.storage
+        .from('image_and_gifs')
+        .getPublicUrl(workout.gifPath!)
+        : 'https://via.placeholder.com/150'; // Fallback URL
+
     return GestureDetector(
-      onTap: (){
+      onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const FullWorkoutPage(workoutGifUrl: "https://www.gifss.com/deportes/atletismo/images/atleta-26.gif", workoutName: "workoutName", description: "description", category: "category")),
+          MaterialPageRoute(
+              builder: (context) => FullWorkoutPage(
+                workout: workout, // Pass the whole workout object
+              )),
         );
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16.0),
         child: Container(
-          height: phoneHieght(context)*0.40,
-          width: phoneWidth(context)*0.45,
+          height: phoneHieght(context) * 0.40,
+          width: phoneWidth(context) * 0.45,
           decoration: BoxDecoration(
             color: Colors.white,
             image: DecorationImage(
-              image: NetworkImage(imagePath),
+              image: NetworkImage(gifUrl),
               fit: BoxFit.cover,
             ),
           ),
@@ -42,7 +52,7 @@ class CustomeWidAndFun {
                 ),
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  exerciseName,
+                  workout.workoutName,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
@@ -58,7 +68,6 @@ class CustomeWidAndFun {
     );
   }
 
-  // Created by Dhruvil for get red color on first letter of text
   TextSpan redText(String text) {
     if (text.isEmpty) {
       return const TextSpan(text: '');
@@ -69,7 +78,7 @@ class CustomeWidAndFun {
           text: text[0],
           style: const TextStyle(
             color: Colors.red,
-            fontSize: 24, // Example font size
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -81,61 +90,61 @@ class CustomeWidAndFun {
             fontWeight: FontWeight.bold,
           ),
         ),
-
-
       ],
     );
   }
 
-  //created by jeel for get current day from the user
   Days getCurrentDay() {
     int weekday = DateTime.now().weekday;
-
     return Days.values[weekday - 1];
   }
 
   String stringgetCurrentDay() {
     DateTime now = DateTime.now();
-    return DateFormat('EEEE').format(now); // returns full day name like "Monday"
+    return DateFormat('EEE')
+        .format(now)
+        .toUpperCase();
   }
 
-  double phoneHieght(BuildContext context){
-    double devicehieght = MediaQuery.of(context).size.height;
-    return devicehieght;
-  }
-  double phoneWidth(BuildContext context){
-    double deviceWidth = MediaQuery.of(context).size.width;
-    return deviceWidth;
+  double phoneHieght(BuildContext context) {
+    return MediaQuery.of(context).size.height;
   }
 
-// Assuming you have these helper functions defined elsewhere
-// double phoneHieght(BuildContext context) => MediaQuery.of(context).size.height;
-// double phoneWidth(BuildContext context) => MediaQuery.of(context).size.width;
+  double phoneWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width;
+  }
 
-  Widget workout(BuildContext context, String imagePath, String exerciseName) {
-    WorkoutItem editWorkout = WorkoutItem(name: "name", type: "type", duration: "duration", category: "category", reps: "5", sets: "3", description: "description");
+  // UPDATED: This widget is now fully dynamic
+  Widget workout(BuildContext context, WorkoutTableModel workout) {
+    final gifUrl = workout.gifPath != null
+        ? Supabase.instance.client.storage
+        .from('image_and_gifs')
+        .getPublicUrl(workout.gifPath!)
+        : 'https://via.placeholder.com/150'; // Fallback URL
+
     return GestureDetector(
-      onTap: (){
+      onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const FullWorkoutPage(workoutGifUrl: "https://www.gifss.com/deportes/atletismo/images/atleta-26.gif", workoutName: "workoutName", description: "description", category: "category")),
+          MaterialPageRoute(
+              builder: (context) => FullWorkoutPage(
+                workout: workout, // Pass the whole workout object
+              )),
         );
       },
       child: ClipRRect(
-        
         borderRadius: BorderRadius.circular(16.0),
         child: Stack(
           children: [
-            // The main container for the workout card
             Container(
-              margin: EdgeInsets.symmetric(vertical: 0,horizontal: 8),
+              margin: EdgeInsets.symmetric(vertical: 0, horizontal: 8),
               height: phoneHieght(context) * 0.30,
               width: phoneWidth(context) * 0.45,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16.0),
                 color: Colors.white,
                 image: DecorationImage(
-                  image: NetworkImage(imagePath),
+                  image: NetworkImage(gifUrl),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -153,7 +162,7 @@ class CustomeWidAndFun {
                     ),
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
-                      exerciseName,
+                      workout.workoutName,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 20,
@@ -165,7 +174,6 @@ class CustomeWidAndFun {
                 ],
               ),
             ),
-            // The edit button in the top-right corner
             Positioned(
               top: 8.0,
               right: 8.0,
@@ -174,7 +182,11 @@ class CustomeWidAndFun {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>  EditWorkoutPage(workoutToEdit: editWorkout)),
+                    MaterialPageRoute(
+                        builder: (context) => EditWorkoutPage(
+                          workoutToEdit:
+                          workout, // Pass the workout object to the edit page
+                        )),
                   );
                 },
               ),
@@ -184,5 +196,4 @@ class CustomeWidAndFun {
       ),
     );
   }
-
 }

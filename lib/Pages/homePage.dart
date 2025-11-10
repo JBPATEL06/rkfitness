@@ -1,168 +1,190 @@
-// home_page.dart (updated code)
-
-import 'dart:math';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rkfitness/Pages/profilepage.dart';
 import 'package:rkfitness/customWidgets/weekdays.dart';
 import 'package:rkfitness/customeWidAndFun.dart';
-import 'package:rkfitness/models/scheduled_workout_model.dart';
+import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
-import '../models/workout_table_model.dart'; // Import your WorkoutTableModel
+import '../models/workout_table_model.dart';
 import 'Notification.dart';
 
 class HomePage extends StatefulWidget {
-  @override
-  State<HomePage> createState() => _HomePage();
+  const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
 }
-class _HomePage extends State<HomePage>{
+
+class _HomePageState extends State<HomePage> {
+  final UserService _userService = UserService();
+  late Future<UserModel?> _userFuture;
 
   Set<Days> _selectedDay = {};
-  CustomeWidAndFun mywidget = new CustomeWidAndFun();
-  String tempImageUrl = "https://www.gifss.com/deportes/atletismo/images/atleta-26.gif";
+  CustomeWidAndFun mywidget = CustomeWidAndFun();
+
+  @override
   void initState() {
     super.initState();
     _selectedDay = {mywidget.getCurrentDay()};
+    _fetchUser();
   }
-  Widget build(BuildContext context){
-    final userEmail = Supabase.instance.client.auth.currentUser?.email ?? 'Guest';
 
+  Future<void> _fetchUser() async {
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+    if (userEmail != null) {
+      _userFuture = _userService.getUser(userEmail);
+    } else {
+      _userFuture = Future.value(null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-        appBar: PreferredSize(preferredSize: Size.fromHeight(100) ,
-            child: rkuAppBar(context, userEmail)),
+        appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(100),
+            child: rkuAppBar(context)),
         body: SingleChildScrollView(
           child: Column(
             children: [
-              SizedBox(height: 5),
-              Text("Scheduel's Days",style: TextStyle(fontSize: 20),),
-              SizedBox(height: 5,),
+              const SizedBox(height: 5),
+              const Text(
+                "Schedule's Days",
+                style: TextStyle(fontSize: 20),
+              ),
+              const SizedBox(
+                height: 5,
+              ),
               Weekdays(
                 selectedDay: _selectedDay,
               ),
-              SizedBox(height: 5,),
+              const SizedBox(
+                height: 5,
+              ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children:[ Text.rich(
-                      mywidget.redText("Cardio")
-                  ),
-                    TextButton(onPressed: null, child: Text("see all",style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black
-                    ),))
+                  children: [
+                    Text.rich(mywidget.redText("Cardio")),
+                    TextButton(
+                        onPressed: null,
+                        child: const Text(
+                          "see all",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ))
                   ],
                 ),
               ),
               SizedBox(
                 height: 250,
-                child: Expanded(
-                  child: _buildWorkoutList("Cardio"),
-                ),
+                child: _buildWorkoutList("cardio"),
               ),
-              SizedBox(height: 5,),
+              const SizedBox(
+                height: 5,
+              ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children:[
-                    Text.rich(
-                        mywidget.redText("Exercise")
-                    ),
-                    TextButton(onPressed: null, child: Text("see all",style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black
-                    ),))
+                  children: [
+                    Text.rich(mywidget.redText("Exercise")),
+                    TextButton(
+                        onPressed: null,
+                        child: const Text(
+                          "see all",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ))
                   ],
                 ),
               ),
               SizedBox(
                 height: 250,
-                child: _buildWorkoutList("Exercise"),
+                child: _buildWorkoutList("exercise"),
               ),
             ],
           ),
-        )
-    );
+        ));
   }
-  //App bar Created by  Jeel
-  Widget rkuAppBar(BuildContext context, String userEmail) {
-    String _ProfilePic =
-        "https://imgs.search.brave.com/Zl2Mr84zSJ2SZt1x9lWKLEE4Ec3ZNGMbqxD5UqNmU7k/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9wcmV2/aWV3LnJlZGQuaXQv/d2hhdHMteW91ci1m/YXZvcml0ZS1sdWZm/eS1pbWFnZS12MC1m/YTdveHZ4YmRqaWUx/LmpwZWc_d2lkdGg9/NTM1JmF1dG89d2Vi/cCZzPTdhYTUyNGY1/Y2ZmNzI0YzcxMjI0/NTIzYmMxNDhiMzFk/ZjMxNGRlYWE";
 
+  Widget rkuAppBar(BuildContext context) {
     return SafeArea(
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: Colors.red[800],
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                // Navigate to the ProfilePage
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                );
-              },
-              child: CircleAvatar(
-                radius: 24.0,
-                backgroundColor: Colors.grey,
-                child: ClipOval(
-                  child: Image.network(
-                    _ProfilePic,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
+        child: FutureBuilder<UserModel?>(
+          future: _userFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Icon(Icons.person);
-                    },
+            final user = snapshot.data;
+            final userEmail = user?.gmail.split('@').first ?? 'Guest';
+            final profilePicUrl = user?.profilePicture;
+
+            return Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ProfilePage()),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 24.0,
+                    backgroundColor: Colors.grey,
+                    backgroundImage:
+                    profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
+                    child: profilePicUrl == null
+                        ? const Icon(Icons.person, color: Colors.white)
+                        : null,
                   ),
                 ),
-              ),
-            ),
-            SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Welcome ,",
-                    style: TextStyle(
-                        fontSize: 20, color: Colors.white, fontWeight: FontWeight.w400)),
-                Text(userEmail,
-                    style: TextStyle(
-                        fontSize: 18, color: Colors.white, fontWeight: FontWeight.w400)),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Welcome,",
+                        style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400)),
+                    Text(userEmail,
+                        style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400)),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NotificationPage()),
+                      );
+                    },
+                    child: const Icon(Icons.notifications, color: Colors.white)),
               ],
-            ),
-            Spacer(), // pushes icon to right
-            GestureDetector(
-                onTap: () {
-                  // Navigate to the ProfilePage
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => NotificationPage()),
-                  );
-                },
-                child: Icon(Icons.notifications, color: Colors.white)),
-
-          ],
+            );
+          },
         ),
       ),
     );
   }
 
-  // This is the new widget to build the list view for a given workout type
   Widget _buildWorkoutList(String workoutType) {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
     final day = mywidget.stringgetCurrentDay();
 
     return FutureBuilder<List<WorkoutTableModel>>(
-      future: _fetchTodaysWorkouts(userId, day),
+      future: _fetchTodaysWorkouts(userEmail, day),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -176,9 +198,8 @@ class _HomePage extends State<HomePage>{
           return const Center(child: Text("No workouts for today"));
         }
 
-        // Filter workouts by the specified type
         final filteredWorkouts = snapshot.data!.where((workout) {
-          return workout.workoutType == workoutType;
+          return workout.workoutType.toLowerCase() == workoutType;
         }).toList();
 
         if (filteredWorkouts.isEmpty) {
@@ -190,17 +211,10 @@ class _HomePage extends State<HomePage>{
           itemCount: filteredWorkouts.length,
           itemBuilder: (context, index) {
             final workout = filteredWorkouts[index];
-            final gifUrl = Supabase.instance.client.storage
-                .from('image_and_gifs')
-                .getPublicUrl(workout.gifPath ?? '');
-
+            // CORRECTED: Pass the entire workout object
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: mywidget.workout(
-                context,
-                gifUrl,
-                workout.workoutName,
-              ),
+              child: mywidget.workout12(context, workout),
             );
           },
         );
@@ -208,39 +222,29 @@ class _HomePage extends State<HomePage>{
     );
   }
 
-  Future<List<WorkoutTableModel>> _fetchTodaysWorkouts(String? userId, String day) async {
-    if (userId == null) {
+  Future<List<WorkoutTableModel>> _fetchTodaysWorkouts(
+      String? userEmail, String day) async {
+    if (userEmail == null) {
       return [];
     }
     try {
-      // 1. Fetch scheduled workout IDs using ScheduleWorkoutModel
-      final scheduleResponse = await Supabase.instance.client
-          .from('schedul workout table')
-          .select()
-          .filter('user_id', 'eq', userId)
-          .filter('day_of_week', 'eq', day)
-          .order('order_in_day');
+      final response = await Supabase.instance.client
+          .from('schedual workout')
+          .select('*, "Workout Table"(*)')
+          .eq('user_id', userEmail)
+          .eq('day_of_week', day);
 
-      if (scheduleResponse.isEmpty) {
+      if (response.isEmpty) {
         return [];
       }
 
-      final workoutIds = scheduleResponse.map((row) => ScheduleWorkoutModel.fromJson(row).workoutId).toList();
+      final List<Map<String, dynamic>> workoutDataList = (response as List)
+          .map((row) => row['Workout Table'] as Map<String, dynamic>)
+          .toList();
 
-      // 2. Fetch workout details using WorkoutTableModel
-      final workoutResponse = await Supabase.instance.client
-          .from('Workout Table')
-          .select()
-          .filter('Workout id', 'in', '(${workoutIds.map((id) => '"$id"').join(',')})');
-
-      if (workoutResponse.isEmpty) {
-        return [];
-      }
-
-      // 3. Convert fetched data to WorkoutTableModel objects
-      final List<WorkoutTableModel> workouts = workoutResponse.map((data) => WorkoutTableModel.fromJson(data)).toList();
-      return workouts;
-
+      return workoutDataList
+          .map((data) => WorkoutTableModel.fromJson(data))
+          .toList();
     } catch (e) {
       print('Error: $e');
       return [];

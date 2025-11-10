@@ -1,30 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-
-// Optional: A simple model to hold workout data.
-// You might already have this from your other files.
-class WorkoutItem {
-  final String name;
-  final String type;
-  final String duration;
-  final String category;
-  final String reps;
-  final String sets;
-  final String description;
-
-  WorkoutItem({
-    required this.name,
-    required this.type,
-    required this.duration,
-    required this.category,
-    required this.reps,
-    required this.sets,
-    required this.description,
-  });
-}
+import 'package:image_picker/image_picker.dart';
+import 'package:rkfitness/models/workout_table_model.dart';
+import 'package:rkfitness/supabaseMaster/workout_services.dart';
 
 class EditWorkoutPage extends StatefulWidget {
-  // Pass the workout item to be edited to this page
-  final WorkoutItem workoutToEdit;
+  final WorkoutTableModel workoutToEdit;
 
   const EditWorkoutPage({super.key, required this.workoutToEdit});
 
@@ -33,7 +14,6 @@ class EditWorkoutPage extends StatefulWidget {
 }
 
 class _EditWorkoutPageState extends State<EditWorkoutPage> {
-  // Controllers to manage text field input
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _typeController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
@@ -41,48 +21,61 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _setsController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final WorkoutTableService _workoutService = WorkoutTableService();
+  File? _pickedImage;
+  String? _currentGifUrl;
 
   @override
   void initState() {
     super.initState();
-    // Pre-populate the text fields with the data from the workoutToEdit object
-    _nameController.text = widget.workoutToEdit.name;
-    _typeController.text = widget.workoutToEdit.type;
-    _durationController.text = widget.workoutToEdit.duration;
-    _categoryController.text = widget.workoutToEdit.category;
-    _repsController.text = widget.workoutToEdit.reps;
-    _setsController.text = widget.workoutToEdit.sets;
-    _descriptionController.text = widget.workoutToEdit.description;
+    _nameController.text = widget.workoutToEdit.workoutName;
+    _typeController.text = widget.workoutToEdit.workoutType;
+    _durationController.text = widget.workoutToEdit.duration ?? '';
+    _categoryController.text = widget.workoutToEdit.workoutCategory ?? '';
+    _repsController.text = widget.workoutToEdit.reps?.toString() ?? '';
+    _setsController.text = widget.workoutToEdit.sets?.toString() ?? '';
+    _descriptionController.text = widget.workoutToEdit.description ?? '';
+    _currentGifUrl = widget.workoutToEdit.gifPath;
   }
 
-  // Function to handle the "Edit" button press
-  void _editWorkout() {
-    // Collect the updated data from the controllers
-    String newName = _nameController.text;
-    String newType = _typeController.text;
-    String newDuration = _durationController.text;
-    String newCategory = _categoryController.text;
-    String newReps = _repsController.text;
-    String newSets = _setsController.text;
-    String newDescription = _descriptionController.text;
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    // You would add validation and API calls here to update the workout
-    print('Editing workout: ${widget.workoutToEdit.name}');
-    print('New Name: $newName');
-    // ... print other updated fields
+    if (pickedFile != null) {
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+      });
+    }
+  }
 
-    // Show a confirmation message
+  void _editWorkout() async {
+    final updatedWorkout = WorkoutTableModel(
+      workoutId: widget.workoutToEdit.workoutId,
+      workoutName: _nameController.text,
+      workoutType: _typeController.text,
+      duration: _durationController.text,
+      workoutCategory: _categoryController.text,
+      reps: int.tryParse(_repsController.text),
+      sets: int.tryParse(_setsController.text),
+      description: _descriptionController.text,
+      gifPath: _currentGifUrl,
+    );
+
+    await _workoutService.updateWorkout(
+      workout: updatedWorkout,
+      newGifFile: _pickedImage,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Workout updated successfully!')),
     );
 
-    // After updating, navigate back
     Navigator.pop(context);
   }
 
   @override
   void dispose() {
-    // Dispose of all controllers
     _nameController.dispose();
     _typeController.dispose();
     _durationController.dispose();
@@ -93,7 +86,6 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
     super.dispose();
   }
 
-  // A reusable helper function to build a text field
   Widget _buildTextField({
     required TextEditingController controller,
     required String labelText,
@@ -124,7 +116,7 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context); // Navigate back to the previous screen
+            Navigator.pop(context);
           },
         ),
         title: const Text(
@@ -138,50 +130,68 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Profile image with edit icon
             Stack(
               alignment: Alignment.center,
               children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey,
-                  child: Icon(Icons.person, size: 80, color: Colors.white),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey,
+                    backgroundImage: _pickedImage != null
+                        ? FileImage(_pickedImage!)
+                        : (_currentGifUrl != null
+                        ? NetworkImage(_currentGifUrl!)
+                        : null) as ImageProvider?,
+                    child: _pickedImage == null && _currentGifUrl == null
+                        ? const Icon(Icons.person,
+                        size: 80, color: Colors.white)
+                        : null,
+                  ),
                 ),
                 Positioned(
                   bottom: 0,
-                  right: 140, // Adjust this value to position the icon
+                  right: 140,
                   child: CircleAvatar(
                     radius: 15,
                     backgroundColor: Colors.red,
                     child: IconButton(
-                      icon: const Icon(Icons.edit, size: 15, color: Colors.white),
-                      onPressed: () {
-                        // Handle image selection logic
-                      },
+                      icon: const Icon(Icons.edit,
+                          size: 15, color: Colors.white),
+                      onPressed: _pickImage,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 30),
-
-            // Form fields
             _buildTextField(controller: _nameController, labelText: 'Name'),
             const SizedBox(height: 20),
             _buildTextField(controller: _typeController, labelText: 'Type'),
             const SizedBox(height: 20),
-            _buildTextField(controller: _durationController, labelText: 'Duration', keyboardType: TextInputType.number),
+            _buildTextField(
+                controller: _durationController,
+                labelText: 'Duration',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 20),
-            _buildTextField(controller: _categoryController, labelText: 'Category'),
+            _buildTextField(
+                controller: _categoryController, labelText: 'Category'),
             const SizedBox(height: 20),
-            _buildTextField(controller: _repsController, labelText: 'Reps', keyboardType: TextInputType.number),
+            _buildTextField(
+                controller: _repsController,
+                labelText: 'Reps',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 20),
-            _buildTextField(controller: _setsController, labelText: 'Sets', keyboardType: TextInputType.number),
+            _buildTextField(
+                controller: _setsController,
+                labelText: 'Sets',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 20),
-            _buildTextField(controller: _descriptionController, labelText: 'Description', maxLines: 5),
+            _buildTextField(
+                controller: _descriptionController,
+                labelText: 'Description',
+                maxLines: 5),
             const SizedBox(height: 40),
-
-            // Edit button
             ElevatedButton(
               onPressed: _editWorkout,
               style: ElevatedButton.styleFrom(

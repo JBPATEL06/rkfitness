@@ -1,7 +1,9 @@
+// user_progress_services.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:intl/intl.dart';
 import '../models/user_progress_model.dart';
+import '../models/user_model.dart';
 
 class UserProgressService {
   final SupabaseClient _supabaseClient = Supabase.instance.client;
@@ -16,6 +18,33 @@ class UserProgressService {
       return response.map((data) => UserProgressModel.fromJson(data)).toList();
     } catch (e) {
       print('Error getting user progress: $e');
+      return [];
+    }
+  }
+
+  // NEW FUNCTION: Fetch active users and their details for a specific day
+  Future<List<UserModel>> getActiveUsersForDay(DateTime day) async {
+    try {
+      // Format the date to match how it's stored in Supabase (YYYY-MM-DD)
+      final String formattedDate = DateFormat('yyyy-MM-dd').format(day);
+
+      // Query the 'user Progress' table and join with the 'USER' table
+      final response = await _supabaseClient
+          .from('user Progress')
+          .select('USER!inner(*)') // Use !inner to ensure we only get users with progress
+          .eq('Date', formattedDate);
+
+      if (response.isEmpty) {
+        return [];
+      }
+
+      // Extract the user data from the joined response
+      return (response as List)
+          .map((item) => UserModel.fromJson(item['USER']))
+          .toList();
+
+    } catch (e) {
+      print('Error getting active users for day: $e');
       return [];
     }
   }

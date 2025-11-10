@@ -1,5 +1,4 @@
-// workout_page.dart
-
+// lib/Pages/workoutPage.dart
 import 'package:flutter/material.dart';
 import 'package:rkfitness/customeWidAndFun.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -39,15 +38,8 @@ class WorkoutPage extends StatelessWidget {
           itemCount: workouts.length,
           itemBuilder: (context, index) {
             final workout = workouts[index];
-            final gifUrl = Supabase.instance.client.storage
-                .from('image_and_gifs')
-                .getPublicUrl(workout.gifPath ?? '');
-
-            return mywidget.workout12(
-              context,
-              gifUrl,
-              workout.workoutName,
-            );
+            // CORRECTED: Pass the entire workout object
+            return mywidget.workout12(context, workout);
           },
         );
       },
@@ -93,7 +85,6 @@ class WorkoutPage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // Note the corrected lowercase strings here
             _buildWorkoutGrid(context, 'cardio'),
             _buildWorkoutGrid(context, 'exercise'),
           ],

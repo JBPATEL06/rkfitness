@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:rkfitness/models/user_model.dart';
+import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -9,27 +12,40 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
+  final UserProgressService _progressService = UserProgressService();
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
+  List<UserModel> _activeUsersForSelectedDay = [];
+  bool _isLoading = false;
 
-  // Dummy data for users active on specific days.
-  final Map<DateTime, List<Map<String, String>>> _activeUsers = {
-    // September 1, 2025 has active users
-    DateTime(2025, 9, 1): [
-      {'name': 'Rudra Shah', 'email': 'rudras23@gmail.com', 'image': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop'},
-      {'name': 'Shubham Vyas', 'email': 'shubhamv220@gmail.com', 'image': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop'},
-    ],
-    // Add other dummy users for different dates
-    DateTime(2025, 9, 2): [
-      {'name': 'Jane Doe', 'email': 'jane.doe@example.com', 'image': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2070&auto=format&fit=crop'},
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    // Fetch active users for the initial selected day (today)
+    _fetchUsersForDay(_selectedDay);
+  }
 
-  // Helper function to get active users for a given day
-  List<Map<String, String>> _getUsersForDay(DateTime day) {
-    // Normalize the date to avoid time-related issues
-    final key = DateTime(day.year, day.month, day.day);
-    return _activeUsers[key] ?? [];
+  Future<void> _fetchUsersForDay(DateTime day) async {
+    setState(() {
+      _isLoading = true;
+    });
+    final users = await _progressService.getActiveUsersForDay(day);
+    if (mounted) {
+      setState(() {
+        _activeUsersForSelectedDay = users;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    if (!isSameDay(_selectedDay, selectedDay)) {
+      setState(() {
+        _selectedDay = selectedDay;
+        _focusedDay = focusedDay;
+      });
+      _fetchUsersForDay(selectedDay);
+    }
   }
 
   @override
@@ -37,7 +53,6 @@ class _CalendarPageState extends State<CalendarPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.red,
-
         title: const Text(
           'Calender',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -52,18 +67,8 @@ class _CalendarPageState extends State<CalendarPage> {
             lastDay: DateTime.utc(2030, 12, 31),
             focusedDay: _focusedDay,
             calendarFormat: CalendarFormat.month,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              if (!isSameDay(_selectedDay, selectedDay)) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              }
-            },
-            eventLoader: _getUsersForDay, // Use the user data for event markers
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            onDaySelected: _onDaySelected,
             calendarStyle: const CalendarStyle(
               todayDecoration: BoxDecoration(
                 color: Colors.redAccent,
@@ -85,7 +90,7 @@ class _CalendarPageState extends State<CalendarPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
-              'Active on ${_selectedDay.day} ${_getMonthName(_selectedDay.month)}',
+              'Active on ${DateFormat.yMMMd().format(_selectedDay)}',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -93,34 +98,44 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ),
           const Divider(),
-          // List of active users for the selected day
           Expanded(
-            child: ListView.builder(
-              itemCount: _getUsersForDay(_selectedDay).length,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _activeUsersForSelectedDay.isEmpty
+                ? const Center(child: Text('No users were active on this day.'))
+                : ListView.builder(
+              itemCount: _activeUsersForSelectedDay.length,
               itemBuilder: (context, index) {
-                final user = _getUsersForDay(_selectedDay)[index];
+                final user = _activeUsersForSelectedDay[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16.0),
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundImage: NetworkImage(user['image']!),
+                        backgroundImage: user.profilePicture != null
+                            ? NetworkImage(user.profilePicture!)
+                            : null,
+                        child: user.profilePicture == null
+                            ? const Icon(Icons.person)
+                            : null,
                       ),
                       const SizedBox(width: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user['name']!,
+                            user.name ?? 'N/A',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                           Text(
-                            user['email']!,
-                            style: const TextStyle(color: Colors.grey),
+                            user.gmail,
+                            style:
+                            const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -133,24 +148,5 @@ class _CalendarPageState extends State<CalendarPage> {
         ],
       ),
     );
-  }
-
-  // Helper to get month name
-  String _getMonthName(int month) {
-    switch (month) {
-      case 1: return 'Jan';
-      case 2: return 'Feb';
-      case 3: return 'Mar';
-      case 4: return 'Apr';
-      case 5: return 'May';
-      case 6: return 'Jun';
-      case 7: return 'Jul';
-      case 8: return 'Aug';
-      case 9: return 'Sep';
-      case 10: return 'Oct';
-      case 11: return 'Nov';
-      case 12: return 'Dec';
-      default: return '';
-    }
   }
 }

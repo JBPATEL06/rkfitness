@@ -1,7 +1,9 @@
+import 'dart:io';
+import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:flutter/material.dart';
-
-// Import your adminworkout.dart file here to enable navigation
-import 'adminAddWorkout.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:rkfitness/supabaseMaster/workout_services.dart';
+import 'package:uuid/uuid.dart';
 
 class AddWorkoutPage extends StatefulWidget {
   const AddWorkoutPage({super.key});
@@ -11,7 +13,6 @@ class AddWorkoutPage extends StatefulWidget {
 }
 
 class _AddWorkoutPageState extends State<AddWorkoutPage> {
-  // Controllers for all the form text fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _typeController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
@@ -19,37 +20,53 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _setsController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final WorkoutTableService _workoutService = WorkoutTableService();
+  File? _pickedImage;
 
-  // Function to handle the "Add" button press
-  void _addWorkout() {
-    // You would add validation and API calls here
-    print('Adding new workout:');
-    print('Name: ${_nameController.text}');
-    print('Type: ${_typeController.text}');
-    print('Duration: ${_durationController.text}');
-    print('Category: ${_categoryController.text}');
-    print('Reps: ${_repsController.text}');
-    print('Sets: ${_setsController.text}');
-    print('Description: ${_descriptionController.text}');
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    // Show a confirmation message to the user
+    if (pickedFile != null) {
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _addWorkout() async {
+    if (_pickedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a GIF for the workout.')),
+      );
+      return;
+    }
+
+    final newWorkout = WorkoutTableModel(
+      workoutId: const Uuid().v4(),
+      workoutName: _nameController.text,
+      workoutType: _typeController.text,
+      duration: _durationController.text,
+      workoutCategory: _categoryController.text,
+      reps: int.tryParse(_repsController.text),
+      sets: int.tryParse(_setsController.text),
+      description: _descriptionController.text,
+    );
+
+    await _workoutService.createWorkoutWithGif(
+      workout: newWorkout,
+      gifFile: _pickedImage!,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Workout added successfully!')),
     );
 
-    // After adding, you can clear the text fields
-    _nameController.clear();
-    _typeController.clear();
-    _durationController.clear();
-    _categoryController.clear();
-    _repsController.clear();
-    _setsController.clear();
-    _descriptionController.clear();
+    Navigator.pop(context);
   }
 
   @override
   void dispose() {
-    // Dispose of all controllers to free up memory
     _nameController.dispose();
     _typeController.dispose();
     _durationController.dispose();
@@ -60,7 +77,6 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
     super.dispose();
   }
 
-  // A reusable helper function to build a text field
   Widget _buildTextField({
     required TextEditingController controller,
     required String labelText,
@@ -91,7 +107,6 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            // This will navigate back to the previous screen (adminworkout.dart)
             Navigator.pop(context);
           },
         ),
@@ -106,54 +121,65 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Profile image with edit icon
             Stack(
               alignment: Alignment.center,
               children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey,
-                  child: Icon(
-                    Icons.person,
-                    size: 80,
-                    color: Colors.white,
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey,
+                    backgroundImage:
+                    _pickedImage != null ? FileImage(_pickedImage!) : null,
+                    child: _pickedImage == null
+                        ? const Icon(Icons.person,
+                        size: 80, color: Colors.white)
+                        : null,
                   ),
                 ),
                 Positioned(
                   bottom: 0,
-                  right: 140, // Adjust this value to position the icon correctly
+                  right: 140,
                   child: CircleAvatar(
                     radius: 15,
                     backgroundColor: Colors.red,
                     child: IconButton(
-                      icon: const Icon(Icons.edit, size: 15, color: Colors.white),
-                      onPressed: () {
-                        // Handle image selection logic
-                      },
+                      icon: const Icon(Icons.edit,
+                          size: 15, color: Colors.white),
+                      onPressed: _pickImage,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 30),
-
-            // Form fields
             _buildTextField(controller: _nameController, labelText: 'Name'),
             const SizedBox(height: 20),
             _buildTextField(controller: _typeController, labelText: 'Type'),
             const SizedBox(height: 20),
-            _buildTextField(controller: _durationController, labelText: 'Duration', keyboardType: TextInputType.number),
+            _buildTextField(
+                controller: _durationController,
+                labelText: 'Duration',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 20),
-            _buildTextField(controller: _categoryController, labelText: 'Category'),
+            _buildTextField(
+                controller: _categoryController, labelText: 'Category'),
             const SizedBox(height: 20),
-            _buildTextField(controller: _repsController, labelText: 'Reps', keyboardType: TextInputType.number),
+            _buildTextField(
+                controller: _repsController,
+                labelText: 'Reps',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 20),
-            _buildTextField(controller: _setsController, labelText: 'Sets', keyboardType: TextInputType.number),
+            _buildTextField(
+                controller: _setsController,
+                labelText: 'Sets',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 20),
-            _buildTextField(controller: _descriptionController, labelText: 'Description', maxLines: 5),
+            _buildTextField(
+                controller: _descriptionController,
+                labelText: 'Description',
+                maxLines: 5),
             const SizedBox(height: 40),
-
-            // Add button
             ElevatedButton(
               onPressed: _addWorkout,
               style: ElevatedButton.styleFrom(

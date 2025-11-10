@@ -24,6 +24,19 @@ class UserService {
     return null;
   }
 
+  // NEW: Fetch all users
+  Future<List<UserModel>> getAllUsers() async {
+    try {
+      final response = await _supabaseClient.from('USER').select();
+      return (response as List)
+          .map((user) => UserModel.fromJson(user))
+          .toList();
+    } catch (e) {
+      print('Error getting all users: $e');
+      return [];
+    }
+  }
+
   // CREATE: Insert a new user record
   Future<void> createUser(UserModel user) async {
     try {

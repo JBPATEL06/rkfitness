@@ -4,6 +4,12 @@ import 'package:rkfitness/Pages/user_dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rkfitness/main.dart';
+import 'package:rkfitness/supabaseMaster/useServices.dart';
+import 'package:rkfitness/supabaseMaster/schedual_services.dart';
+import 'package:rkfitness/models/user_model.dart';
+import 'package:rkfitness/models/scheduled_workout_model.dart';
+import 'package:uuid/uuid.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -13,6 +19,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final supabase = Supabase.instance.client;
+  final UserService _userService = UserService();
+  final ScheduleWorkoutService _scheduleService = ScheduleWorkoutService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -24,14 +32,31 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     try {
-      final response = await supabase.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final userEmail = _emailController.text.trim();
+      final password = _passwordController.text;
+      AuthResponse response;
+
+      // Try to get the user from the custom USER table
+      final existingUser = await _userService.getUser(userEmail);
+
+      if (existingUser == null) {
+        // User does not exist in the USER table, so we'll try to sign them up.
+        response = await supabase.auth.signUp(
+          email: userEmail,
+          password: password,
+        );
+        // Create the user's record and default schedule after successful sign up
+        await _createAndProvisionNewUser(userEmail, response.user?.id);
+      } else {
+        // User already exists, proceed with standard sign-in.
+        response = await supabase.auth.signInWithPassword(
+          email: userEmail,
+          password: password,
+        );
+      }
 
       Navigator.of(context).pop(); // Close loading dialog
 
-      // Success
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
@@ -40,16 +65,22 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (response.user != null) {
-        final session = Supabase.instance.client.auth.currentSession;
-        debugPrint("🔐 Session: ${response.session?.accessToken}");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => UserDashBoard()),
-        );
+        // Check userType to navigate to the correct dashboard
+        final user = await _userService.getUser(userEmail);
+        if (user?.userType == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboard()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => UserDashBoard()),
+          );
+        }
       } else {
         debugPrint("Error in session set: ${response.user}");
       }
-      // Navigate to Home
     } on AuthException catch (e) {
       Navigator.of(context).pop(); // Close loading dialog
       debugPrint("Login error code: ${e.code}");
@@ -66,14 +97,53 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     }
+  }
 
-    @override
-    void dispose() {
-      _emailController.dispose();
-      _passwordController.dispose();
-      super.dispose();
+  Future<void> _createAndProvisionNewUser(String userEmail, String? userId) async {
+    // Create user record in the USER table
+    final newUser = UserModel(
+      gmail: userEmail,
+      name: userEmail.split('@')[0],
+      userType: 'user', // Set default userType
+    );
+    await _userService.createUser(newUser);
+
+    // Create a default workout schedule
+    await _createDefaultSchedule(userEmail);
+  }
+
+  Future<void> _createDefaultSchedule(String userEmail) async {
+    final Uuid uuid = Uuid();
+    final List<String> days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+    // You should replace these with actual workout IDs from your 'Workout Table'
+    const List<String> dummyWorkoutIds = [
+      'd8f08bfc-4a7e-46cd-8c0a-26063f4a3e74',
+      'b6d218f1-464a-4467-9879-98e907a9c8e8',
+    ];
+
+    for (int i = 0; i < days.length; i++) {
+      final day = days[i];
+      final workoutId = dummyWorkoutIds[i % dummyWorkoutIds.length];
+
+      final newSchedule = ScheduleWorkoutModel(
+        id: uuid.v4(),
+        userId: userEmail,
+        workoutId: workoutId,
+        dayOfWeek: day,
+        orderInDay: 1,
+      );
+      await _scheduleService.createScheduleWorkout(newSchedule);
     }
   }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,9 +227,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     onPressed: login,
                     child: const Text(
-                            "Login",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
+                      "Login",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                   SizedBox(height: 30,),
 

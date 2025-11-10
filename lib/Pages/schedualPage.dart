@@ -1,5 +1,3 @@
-// schedual_page.dart (updated code)
-
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:rkfitness/Pages/fullWorkout.dart';
@@ -23,7 +21,6 @@ class _SchedualPageState extends State<SchedualPage> {
   @override
   void initState() {
     super.initState();
-    // Set initial day to the current day of the week if available
     final currentDayIndex = DateTime.now().weekday - 1;
     if (currentDayIndex >= 0 && currentDayIndex < daysOfWeek.length) {
       _selectedDay = daysOfWeek[currentDayIndex];
@@ -33,7 +30,7 @@ class _SchedualPageState extends State<SchedualPage> {
   void _onDeleteExercise(String scheduleId) async {
     try {
       await Supabase.instance.client
-          .from('schedul workout')
+          .from('schedual workout')
           .delete()
           .eq('id', scheduleId);
 
@@ -45,7 +42,7 @@ class _SchedualPageState extends State<SchedualPage> {
         textColor: Colors.white,
         fontSize: 16.0,
       );
-      setState(() {}); // Rebuild the widget to refresh the list
+      setState(() {});
     } catch (e) {
       print('Error deleting exercise: $e');
       Fluttertoast.showToast(
@@ -126,9 +123,9 @@ class _SchedualPageState extends State<SchedualPage> {
                   itemCount: scheduledWorkouts.length,
                   separatorBuilder: (context, index) => const Divider(),
                   itemBuilder: (context, index) {
-                    final workoutData = scheduledWorkouts[index];
+                    final workoutData = scheduledWorkouts[index]['Workout Table'] as Map<String, dynamic>;
                     final workout = WorkoutTableModel.fromJson(workoutData);
-                    final schedule = ScheduleWorkoutModel.fromJson(workoutData);
+                    final schedule = ScheduleWorkoutModel.fromJson(scheduledWorkouts[index]);
 
                     final gifUrl = Supabase.instance.client.storage
                         .from('image_and_gifs')
@@ -158,8 +155,8 @@ class _SchedualPageState extends State<SchedualPage> {
   Future<List<Map<String, dynamic>>> _fetchScheduledWorkoutsForDay(String day) async {
     try {
       final response = await Supabase.instance.client
-          .from('schedul workout')
-          .select('*, "Workout Table"(*)') // Select all columns and join the Workout Table
+          .from('schedual workout')
+          .select('*, "Workout Table"(*)')
           .eq('user_id', widget.userEmail)
           .eq('day_of_week', day);
       return (response as List).cast<Map<String, dynamic>>();
