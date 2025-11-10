@@ -128,6 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Navigator.of(context).pop();
           },
         ),
+        
       ),
       body: SingleChildScrollView(
         child: Column(
