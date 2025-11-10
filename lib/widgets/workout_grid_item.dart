@@ -11,24 +11,63 @@ class WorkoutGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    // --- FIX: Robust GIF URL generation ---
-    String gifUrl;
+
+    String? gifUrl;
+    // FIX: Only attempt to get URL if path is not null AND not empty
     if (workout.gifPath != null && workout.gifPath!.isNotEmpty) {
-      // Safely generate the public URL if the path exists
       try {
         gifUrl = Supabase.instance.client.storage
             .from('image_and_gifs')
             .getPublicUrl(workout.gifPath!);
       } catch (e) {
-        // Fallback to placeholder if URL generation fails unexpectedly
-        gifUrl = 'https://via.placeholder.com/150';
+        // If generating the URL fails for any reason, treat it as missing
+        gifUrl = null; 
       }
-    } else {
-      // Use a generic placeholder if no valid path exists
-      gifUrl = 'https://via.placeholder.com/150';
     }
-    // --- END FIX ---
+
+    final bool useNetworkImage = gifUrl != null && gifUrl.isNotEmpty;
+
+    // Use a local widget for the image area based on URL validity
+    Widget imageWidget = useNetworkImage
+        ? FadeInImage.assetNetwork(
+            placeholder: 'assets/images/Rku_Logo.png', // placeholder asset
+            image: gifUrl!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            // Error builder for network image failures
+            imageErrorBuilder: (context, error, stackTrace) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: theme.colorScheme.error,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Failed to load image',
+                      style: TextStyle(
+                        color: theme.colorScheme.error,
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        // Fallback to a local icon when no valid URL is present
+        : Center(
+            child: Icon(
+              Icons.image_not_supported,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              size: 50,
+            ),
+          );
 
     return GestureDetector(
       onTap: () {
@@ -50,36 +89,7 @@ class WorkoutGridItem extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              FadeInImage.assetNetwork(
-                placeholder: 'assets/images/loading.gif', // placeholder asset
-                image: gifUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                imageErrorBuilder: (context, error, stackTrace) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: theme.colorScheme.error,
-                          size: 32,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Failed to load image',
-                          style: TextStyle(
-                            color: theme.colorScheme.error,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              imageWidget, // Use the fully safe image widget
               Container(
                 alignment: Alignment.bottomCenter,
                 width: double.infinity,

@@ -9,13 +9,24 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../customWidgets/weekdays.dart';
 
 class CustomeWidAndFun {
+
+  // FIX: Helper function to safely get the image URL
+  String _getSafeGifUrl(String? gifPath) {
+      if (gifPath != null && gifPath.isNotEmpty) {
+          try {
+              return Supabase.instance.client.storage
+                  .from('image_and_gifs')
+                  .getPublicUrl(gifPath);
+          } catch (e) {
+              return 'https://via.placeholder.com/150';
+          }
+      }
+      return 'https://via.placeholder.com/150';
+  }
+
   Widget workout12(BuildContext context, WorkoutTableModel workout) {
     final theme = Theme.of(context);
-    final gifUrl = workout.gifPath != null
-        ? Supabase.instance.client.storage
-        .from('image_and_gifs')
-        .getPublicUrl(workout.gifPath!)
-        : 'https://via.placeholder.com/150';
+    final gifUrl = _getSafeGifUrl(workout.gifPath);
 
     return GestureDetector(
       onTap: () {
@@ -110,11 +121,7 @@ class CustomeWidAndFun {
 
   Widget workout(BuildContext context, WorkoutTableModel workout) {
     final theme = Theme.of(context);
-    final gifUrl = workout.gifPath != null
-        ? Supabase.instance.client.storage
-        .from('image_and_gifs')
-        .getPublicUrl(workout.gifPath!)
-        : 'https://via.placeholder.com/150';
+    final gifUrl = _getSafeGifUrl(workout.gifPath);
 
     return GestureDetector(
       onTap: () {
