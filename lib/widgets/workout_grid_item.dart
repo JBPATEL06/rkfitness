@@ -11,11 +11,24 @@ class WorkoutGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final gifUrl = workout.gifPath != null
-        ? Supabase.instance.client.storage
+    
+    // --- FIX: Robust GIF URL generation ---
+    String gifUrl;
+    if (workout.gifPath != null && workout.gifPath!.isNotEmpty) {
+      // Safely generate the public URL if the path exists
+      try {
+        gifUrl = Supabase.instance.client.storage
             .from('image_and_gifs')
-            .getPublicUrl(workout.gifPath!)
-        : 'https://via.placeholder.com/150';
+            .getPublicUrl(workout.gifPath!);
+      } catch (e) {
+        // Fallback to placeholder if URL generation fails unexpectedly
+        gifUrl = 'https://via.placeholder.com/150';
+      }
+    } else {
+      // Use a generic placeholder if no valid path exists
+      gifUrl = 'https://via.placeholder.com/150';
+    }
+    // --- END FIX ---
 
     return GestureDetector(
       onTap: () {

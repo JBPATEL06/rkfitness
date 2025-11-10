@@ -72,11 +72,11 @@ class HomePage extends HookWidget {
           return <WorkoutTableModel>[];
         }
 
-        // Defensive parsing logic:
+        // Defensive parsing logic to handle missing/incorrectly nested data:
         final List<Map<String, dynamic>> workoutDataList = (response as List<dynamic>)
             .whereType<Map<String, dynamic>>()
             .map((row) {
-                // Safely extract the nested workout data. Use a default empty map if not found or wrong type.
+                // Safely extract the nested workout data.
                 final nestedData = row['Workout Table'];
                 return nestedData is Map<String, dynamic> ? nestedData : <String, dynamic>{};
             })
@@ -118,8 +118,13 @@ class HomePage extends HookWidget {
 
           final displayError = error.value;
           if (displayError != null && displayError.isNotEmpty) {
-             // If a caught API/data error exists, show that instead of the list
+             // Show error if one was caught during fetchTodaysWorkouts
              return Center(child: Text(displayError, style: theme.textTheme.bodyLarge));
+          }
+
+          if (snapshot.hasError) {
+             // Catch potential errors not caught in async logic
+             return Center(child: Text('Snapshot Error: ${snapshot.error.toString()}', style: theme.textTheme.bodyLarge));
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -127,7 +132,6 @@ class HomePage extends HookWidget {
           }
 
           final filteredWorkouts = snapshot.data!.where((workout) {
-            // Null check for safety, although the defensive parsing should prevent it.
             return workout.workoutType != null && workout.workoutType.toLowerCase() == workoutType;
           }).toList();
 
@@ -256,10 +260,11 @@ class HomePage extends HookWidget {
                         ],
                       ),
                     ),
-                    // SizedBox(
-                    //   height: 250,
-                    //   child: buildWorkoutList("cardio"),
-                    // ),
+                    // <--- UNCOMMENT THIS SECTION --->
+                    SizedBox( 
+                      height: 250,
+                      child: buildWorkoutList("cardio"),
+                    ),
                     const SizedBox(height: 5),
                     const Padding(
                       padding: EdgeInsets.all(8.0),
@@ -276,10 +281,11 @@ class HomePage extends HookWidget {
                         ],
                       ),
                     ),
-                    // SizedBox(
-                    //   height: 250,
-                    //   child: buildWorkoutList("exercise"),
-                    // ),
+                    // <--- UNCOMMENT THIS SECTION --->
+                    SizedBox(
+                      height: 250,
+                      child: buildWorkoutList("exercise"),
+                    ),
                   ],
                 ),
               ),
