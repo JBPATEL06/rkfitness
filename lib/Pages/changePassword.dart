@@ -18,25 +18,31 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (newPassword.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill out all fields.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill out all fields.')),
+        );
+      }
       return;
     }
 
     if (newPassword != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('New password and confirm password do not match!')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('New password and confirm password do not match!')),
+        );
+      }
       return;
     }
 
     if (newPassword.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('New password must be at least 6 characters long!')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('New password must be at least 6 characters long!')),
+        );
+      }
       return;
     }
 
@@ -44,16 +50,20 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       await Supabase.instance.client.auth
           .updateUser(UserAttributes(password: newPassword));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            backgroundColor: Colors.green,
-            content: Text('Password updated successfully!')),
-      );
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              backgroundColor: Colors.green,
+              content: Text('Password updated successfully!')),
+        );
+        Navigator.pop(context);
+      }
     } on AuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text(e.message)),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.red, content: Text(e.message)),
+        );
+      }
     }
   }
 
@@ -68,18 +78,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.red,
+        title: const Text('Change password'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Change password',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -98,18 +103,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: _changePassword,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Change Password',
-                style: TextStyle(fontSize: 18),
-              ),
+              child: const Text('Change Password'),
             ),
           ],
         ),
@@ -128,13 +122,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         labelText: labelText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
         contentPadding:
-        const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.grey[200],
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

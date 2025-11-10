@@ -1,86 +1,156 @@
-// user_progress_services.dart
-
+import '../utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../models/user_progress_model.dart';
 import '../models/user_model.dart';
+import '../models/workout_table_model.dart';
 
 class UserProgressService {
   final SupabaseClient _supabaseClient = Supabase.instance.client;
 
-  // READ: Fetch all progress records for a single user
   Future<List<UserProgressModel>> getUserProgress(String userGmailId) async {
     try {
       final List<dynamic> response = await _supabaseClient
           .from('user Progress')
           .select()
-          .eq('Gmail id', userGmailId);
+          .eq('User Email', userGmailId);
+
+      Logger.info('USER PROGRESS FETCHED FOR $userGmailId');
+      Logger.debug('Response: $response');
+
       return response.map((data) => UserProgressModel.fromJson(data)).toList();
     } catch (e) {
-      print('Error getting user progress: $e');
+      Logger.error('Error getting user progress', e);
       return [];
     }
   }
 
-  // NEW FUNCTION: Fetch active users and their details for a specific day
-  Future<List<UserModel>> getActiveUsersForDay(DateTime day) async {
+  Future<UserProgressModel?> getProgressForDay(String userGmailId, DateTime day) async {
     try {
-      // Format the date to match how it's stored in Supabase (YYYY-MM-DD)
-      final String formattedDate = DateFormat('yyyy-MM-dd').format(day);
+      final startOfDay = DateTime(day.year, day.month, day.day).toIso8601String();
+      final endOfNextDay = DateTime(day.year, day.month, day.day + 1).toIso8601String();
 
-      // Query the 'user Progress' table and join with the 'USER' table
       final response = await _supabaseClient
           .from('user Progress')
-          .select('USER!inner(*)') // Use !inner to ensure we only get users with progress
-          .eq('Date', formattedDate);
+          .select()
+          .eq('User Email', userGmailId)
+          .gte('time stamp', startOfDay)
+          .lt('time stamp', endOfNextDay)
+          .maybeSingle();
 
-      if (response.isEmpty) {
-        return [];
-      }
+      if (response == null) return null;
+      return UserProgressModel.fromJson(response);
+    } catch (e, st) {
+      Logger.error('Error getting progress for day', e, st);
+      return null;
+    }
+  }
 
-      // Extract the user data from the joined response
-      return (response as List)
-          .map((item) => UserModel.fromJson(item['USER']))
+  Future<List<UserModel>> getActiveUsersForDay(DateTime day) async {
+    try {
+      final startOfDay = DateTime(day.year, day.month, day.day).toIso8601String();
+      final endOfNextDay = DateTime(day.year, day.month, day.day + 1).toIso8601String();
+
+      // FIX: Use double quotes around the column name to force the space and prevent conversion to camelCase.
+      final List<dynamic> progressResponse = await _supabaseClient
+          .from('user Progress')
+          .select('"User Email"') 
+          .gte('time stamp', startOfDay)
+          .lt('time stamp', endOfNextDay)
+          .or('completedExercise.gt.0,completedCardio.gt.0');
+
+      if (progressResponse.isEmpty) return [];
+
+      final List<String> userEmails = progressResponse
+          .map((item) => item['User Email'] as String)
+          .toSet()
           .toList();
 
-    } catch (e) {
-      print('Error getting active users for day: $e');
+      if (userEmails.isEmpty) return [];
+
+      final List<dynamic> userResponse = await _supabaseClient
+          .from('User')
+          .select()
+          .filter('Gmail', 'in', userEmails);
+
+      return userResponse
+          .map((data) => UserModel.fromJson(data))
+          .toList();
+    } catch (e, st) {
+      Logger.error('Error getting active users for day', e, st);
       return [];
     }
   }
 
-  // CREATE: Insert a new progress record
-  Future<void> createUserProgress(UserProgressModel progress) async {
+  Future<void> logWorkoutCompletion({
+    required String userEmail,
+    required WorkoutTableModel workout,
+  }) async {
+    final today = DateTime.now();
+    final formattedDate = DateFormat('yyyy-MM-dd').format(today);
+    final dayOfWeek = DateFormat('EEE').format(today).toUpperCase();
+
+    final isExercise = workout.workoutType.toLowerCase() == 'exercise';
+
     try {
-      await _supabaseClient.from('user Progress').insert(progress.toJson());
-    } catch (e) {
-      print('Error creating user progress: $e');
+      final existingProgress = await _supabaseClient
+          .from('user Progress')
+          .select()
+          .eq('User Email', userEmail)
+          .eq('time stamp', formattedDate)
+          .maybeSingle();
+
+      if (existingProgress != null) {
+        final progress = UserProgressModel.fromJson(existingProgress);
+
+        final currentExerciseCount = progress.completedExerciseCount ?? 0;
+        final currentCardioCount = progress.completedCardioCount ?? 0;
+
+        Map<String, dynamic> updateData = {};
+
+        if (isExercise) {
+          updateData['completedExercise'] = currentExerciseCount + 1;
+        } else {
+          updateData['completedCardio'] = currentCardioCount + 1;
+        }
+
+        if (progress.id != null) {
+          await _supabaseClient.from('user Progress').update(updateData).eq('id', progress.id!);
+        }
+      } else {
+        final newProgress = UserProgressModel(
+          userEmail: userEmail,
+          day: dayOfWeek,
+          time: today,
+          completedExerciseCount: isExercise ? 1 : 0,
+          completedCardioCount: !isExercise ? 1 : 0,
+        );
+
+        await _supabaseClient.from('user Progress').insert(newProgress.toJson());
+      }
+    } catch (e, st) {
+      Logger.error('Error logging workout completion', e, st);
     }
   }
 
-  // UPDATE: Update an existing progress record
   Future<void> updateUserProgress(UserProgressModel progress) async {
     try {
-      await _supabaseClient
-          .from('user Progress')
-          .update(progress.toJson())
-          .eq('Gmail id', progress.gmailId!) // Added ! to assert non-null
-          .eq('day', progress.day!); // Added ! to assert non-null
-    } catch (e) {
-      print('Error updating user progress: $e');
+      if (progress.id != null) {
+        await _supabaseClient
+            .from('user Progress')
+            .update(progress.toJson())
+            .eq('id', progress.id!);
+      }
+    } catch (e, st) {
+      Logger.error('Error updating user progress', e, st);
     }
   }
 
-  // DELETE: Delete a progress record
-  Future<void> deleteUserProgress(String userGmailId, String day) async {
+  Future<void> deleteUserProgress(int progressId) async {
     try {
-      await _supabaseClient
-          .from('user Progress')
-          .delete()
-          .eq('Gmail id', userGmailId)
-          .eq('day', day);
-    } catch (e) {
-      print('Error deleting user progress: $e');
+      await _supabaseClient.from('user Progress').delete().eq('id', progressId);
+    } catch (e, st) {
+      Logger.error('Error deleting user progress', e, st);
     }
   }
 }

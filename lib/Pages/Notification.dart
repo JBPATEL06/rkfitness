@@ -10,7 +10,6 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  // Create an instance of the NotificationService
   final NotificationService _notificationService = NotificationService();
   late Future<List<NotificationModel>> _notificationsFuture;
 
@@ -22,19 +21,16 @@ class _NotificationPageState extends State<NotificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.red,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'Notification',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Notification'),
         centerTitle: false,
       ),
       body: FutureBuilder<List<NotificationModel>>(
@@ -69,17 +65,15 @@ class _NotificationPageState extends State<NotificationPage> {
                     children: [
                       Text(
                         item.title ?? 'No Title',
-                        style: const TextStyle(
-                          color: Colors.red,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.description ?? 'No Description',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.black87,
                         ),
                       ),

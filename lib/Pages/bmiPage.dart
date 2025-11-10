@@ -11,7 +11,6 @@ class BmiPage extends StatefulWidget {
 }
 
 class _BmiPageState extends State<BmiPage> {
-  // 1. Define variables to hold the user inputs and the result.
   String _gender = 'Male';
   int _age = 20;
   double _weight = 60.0;
@@ -20,26 +19,23 @@ class _BmiPageState extends State<BmiPage> {
   bool _showResult = false;
   bool _isLoading = true;
 
-  // Create an instance of the UserService to interact with Supabase
   final UserService _userService = UserService();
 
   @override
   void initState() {
     super.initState();
-    // Fetch user data when the widget initializes
     _fetchUserData();
   }
 
-  // 2. The core function to fetch user data from Supabase.
   Future<void> _fetchUserData() async {
     final userGmail = Supabase.instance.client.auth.currentUser?.email;
     if (userGmail == null) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
 
     final user = await _userService.getUser(userGmail);
-    if (user != null) {
+    if (user != null && mounted) {
       setState(() {
         _weight = user.weight ?? _weight;
         _height = user.height ?? _height;
@@ -48,20 +44,18 @@ class _BmiPageState extends State<BmiPage> {
         _bmiResult = user.bmi ?? 0.0;
         _isLoading = false;
       });
-    } else {
-      setState(() => _isLoading = false);
+    } else if (mounted) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // 3. The core function to calculate and update BMI.
-  Future<void> _calculateBmi() async {
-    double heightInMeters = _height / 100;
-    _bmiResult = _weight / (heightInMeters * heightInMeters);
-
+  Future<void> _calculateAndUpdateBmi() async {
     final userGmail = Supabase.instance.client.auth.currentUser?.email;
     if (userGmail == null) return;
 
-    // Use a temporary UserModel object to update the data
+    double heightInMeters = _height / 100;
+    _bmiResult = _weight / (heightInMeters * heightInMeters);
+
     final updatedUser = UserModel(
       gmail: userGmail,
       weight: _weight,
@@ -71,15 +65,21 @@ class _BmiPageState extends State<BmiPage> {
       bmi: _bmiResult,
     );
 
-    // Call the UserService to update the record in the database
     await _userService.updateUser(updatedUser);
 
-    setState(() {
-      _showResult = true;
-    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text('BMI data updated successfully!'),
+        ),
+      );
+      setState(() {
+        _showResult = true;
+      });
+    }
   }
 
-  // 4. The function to reset the calculator and hide the result.
   void _resetCalculator() {
     setState(() {
       _showResult = false;
@@ -88,6 +88,7 @@ class _BmiPageState extends State<BmiPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -98,22 +99,19 @@ class _BmiPageState extends State<BmiPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Center(child: Text('BMI Calculator',style: TextStyle(color: Colors.white),)),
-        backgroundColor: Colors.red[700],
+        title: const Text('BMI Calculator',),
       ),
       body: _showResult
           ? Center(
-        // The result screen
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Your BMI is', style: TextStyle(fontSize: 24)),
+            Text('Your BMI is', style: theme.textTheme.headlineSmall),
             Text(
-              _bmiResult.toStringAsFixed(1), // Display with one decimal place
-              style: TextStyle(
-                  fontSize: 60,
+              _bmiResult.toStringAsFixed(1),
+              style: theme.textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.red[700]),
+                  color: theme.colorScheme.primary),
             ),
             const SizedBox(height: 20),
             Row(
@@ -121,19 +119,8 @@ class _BmiPageState extends State<BmiPage> {
               children: [
                 ElevatedButton(
                   onPressed: _resetCalculator,
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15)),
-                  child: const Text('Back',style: TextStyle(color: Colors.white),),
-                ),
-                ElevatedButton(
-                  onPressed: _calculateBmi,
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 15)),
-                  child: const Text('Update',style:  TextStyle(color:Colors.white,)),
+                  style: theme.elevatedButtonTheme.style,
+                  child: const Text('Back'),
                 ),
               ],
             ),
@@ -141,47 +128,37 @@ class _BmiPageState extends State<BmiPage> {
         ),
       )
           : SingleChildScrollView(
-        // The input screen
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Gender selection
             Row(
               children: [
-                _buildGenderCard('Male'),
+                _buildGenderCard(context, 'Male'),
                 const SizedBox(width: 10),
-                _buildGenderCard('Female'),
+                _buildGenderCard(context, 'Female'),
               ],
             ),
             const SizedBox(height: 20),
-            // Age & Weight
             Row(
               children: [
-                _buildInputCard('Age', _age, (value) {
+                _buildInputCard(context, 'Age', _age, (value) {
                   setState(() => _age = value.toInt());
                 }, min: 1, max: 120),
                 const SizedBox(width: 10),
-                _buildInputCard('Weight(KG)', _weight, (value) {
+                _buildInputCard(context, 'Weight(KG)', _weight, (value) {
                   setState(() => _weight = value);
                 }, min: 1.0, max: 200.0),
               ],
             ),
             const SizedBox(height: 20),
-            // Height slider
-            _buildHeightSlider(),
+            _buildHeightSlider(context),
             const SizedBox(height: 30),
-            // Update button
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _calculateBmi,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                child: const Text('Update',
-                    style: TextStyle(fontSize: 20, color: Colors.white)),
+                onPressed: _calculateAndUpdateBmi,
+                child: const Text('Calculate & Update'),
               ),
             ),
           ],
@@ -190,9 +167,9 @@ class _BmiPageState extends State<BmiPage> {
     );
   }
 
-  // --- Helper Widgets to build the UI components ---
-
-  Widget _buildGenderCard(String gender) {
+  Widget _buildGenderCard(BuildContext context, String gender) {
+    final theme = Theme.of(context);
+    final isSelected = _gender == gender;
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -203,7 +180,7 @@ class _BmiPageState extends State<BmiPage> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _gender == gender ? Colors.red[700] : Colors.grey[300],
+            color: isSelected ? theme.colorScheme.primary : theme.inputDecorationTheme.fillColor,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
@@ -211,14 +188,13 @@ class _BmiPageState extends State<BmiPage> {
               Icon(
                 gender == 'Male' ? Icons.male : Icons.female,
                 size: 50,
-                color: _gender == gender ? Colors.white : Colors.black,
+                color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
               ),
               const SizedBox(height: 10),
               Text(
                 gender,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: _gender == gender ? Colors.white : Colors.black,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -228,34 +204,36 @@ class _BmiPageState extends State<BmiPage> {
     );
   }
 
-  Widget _buildInputCard(String label, dynamic value, Function(dynamic) onChanged,
+  Widget _buildInputCard(BuildContext context, String label, dynamic value, Function(dynamic) onChanged,
       {double? min, double? max}) {
+    final theme = Theme.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey[300],
+          color: theme.inputDecorationTheme.fillColor,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
           children: [
-            Text(label, style: const TextStyle(fontSize: 18)),
+            Text(label, style: theme.textTheme.titleMedium),
             Text(
               value is double ? value.toStringAsFixed(0) : value.toString(),
-              style: TextStyle(
-                  fontSize: 40,
+              style: theme.textTheme.displaySmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.red[700]),
+                  color: theme.colorScheme.primary),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildIconButton(
+                    theme,
                     Icons.remove,
                         () => onChanged(value - (value is double ? 1.0 : 1)),
                     (value == min)),
                 const SizedBox(width: 10),
                 _buildIconButton(
+                    theme,
                     Icons.add,
                         () => onChanged(value + (value is double ? 1.0 : 1)),
                     (value == max)),
@@ -267,36 +245,36 @@ class _BmiPageState extends State<BmiPage> {
     );
   }
 
-  Widget _buildIconButton(IconData icon, VoidCallback onPressed, bool disabled) {
+  Widget _buildIconButton(ThemeData theme, IconData icon, VoidCallback onPressed, bool disabled) {
     return FloatingActionButton(
       onPressed: disabled ? null : onPressed,
       mini: true,
-      backgroundColor: disabled ? Colors.grey[400] : Colors.red,
-      child: Icon(icon, color: Colors.white),
+      backgroundColor: disabled ? Colors.grey.shade400 : theme.colorScheme.primary,
+      child: Icon(icon, color: theme.colorScheme.onPrimary),
     );
   }
 
-  Widget _buildHeightSlider() {
+  Widget _buildHeightSlider(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        const Text(
+        Text(
           'Height(Cm)',
-          style: TextStyle(fontSize: 18),
+          style: theme.textTheme.titleMedium,
         ),
         Text(
           _height.toStringAsFixed(0),
-          style: TextStyle(
-              fontSize: 40,
+          style: theme.textTheme.displaySmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.red[700]),
+              color: theme.colorScheme.primary),
         ),
         Slider(
           value: _height,
           min: 100,
           max: 220,
           divisions: 120,
-          activeColor: Colors.red,
-          inactiveColor: Colors.red[100],
+          activeColor: theme.colorScheme.primary,
+          inactiveColor: theme.colorScheme.primary.withAlpha(77),
           onChanged: (double newValue) {
             setState(() {
               _height = newValue;

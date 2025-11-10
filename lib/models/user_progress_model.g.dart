@@ -8,20 +8,22 @@ part of 'user_progress_model.dart';
 
 UserProgressModel _$UserProgressModelFromJson(Map<String, dynamic> json) =>
     UserProgressModel(
-      gmailId: json['Gmail id'] as String?,
+      id: json['id'] as String?,
       day: json['day'] as String?,
-      workoutCount: (json['workout count'] as num?)?.toInt(),
-      allComplete: json['all complete'] as bool?,
-      date: json['Date'] == null
+      time: json['time stamp'] == null
           ? null
-          : DateTime.parse(json['Date'] as String),
+          : DateTime.parse(json['time stamp'] as String),
+      userEmail: json['User Email'] as String?,
+      completedExerciseCount: (json['completedExercise'] as num?)?.toInt(),
+      completedCardioCount: (json['completedCardio'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$UserProgressModelToJson(UserProgressModel instance) =>
     <String, dynamic>{
-      'Gmail id': instance.gmailId,
+      'id': instance.id,
       'day': instance.day,
-      'workout count': instance.workoutCount,
-      'all complete': instance.allComplete,
-      'Date': instance.date?.toIso8601String(),
+      'time stamp': instance.time?.toIso8601String(),
+      'User Email': instance.userEmail,
+      'completedExercise': instance.completedExerciseCount,
+      'completedCardio': instance.completedCardioCount,
     };

@@ -1,0 +1,355 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:rkfitness/Pages/profilepage.dart';
+import 'package:rkfitness/customWidgets/weekdays.dart';
+import 'package:rkfitness/customeWidAndFun.dart';
+import 'package:rkfitness/supabaseMaster/useServices.dart';
+import 'package:rkfitness/widgets/workout_grid_item.dart';
+import 'package:rkfitness/widgets/connection_status.dart';
+import 'package:rkfitness/widgets/error_message.dart';
+import 'package:rkfitness/widgets/loading_overlay.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../models/user_model.dart';
+import '../models/workout_table_model.dart';
+import 'Notification.dart';
+
+class HomePage extends HookWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+  @override
+  Widget build(BuildContext context) {
+    final _userService = useMemoized(() => UserService(), []);
+    final _isLoading = useState(false);
+    final _error = useState<String?>(null);
+    final _selectedDay = useState<Set<Days>>({getCurrentDay()});
+    final _hasConnection = useState(true);
+    final _userFuture = useState<Future<UserModel?>?>(null);
+
+    // Initialize data fetching
+    useEffect(() {
+      Future<void> initData() async {
+        final connectivityResult = await Connectivity().checkConnectivity();
+        _hasConnection.value = connectivityResult != ConnectivityResult.none;
+        
+        final userEmail = Supabase.instance.client.auth.currentUser?.email;
+        if (userEmail != null && _hasConnection.value) {
+          try {
+            _isLoading.value = true;
+            _error.value = null;
+            _userFuture.value = _userService.getUser(userEmail);
+          } catch (e) {
+            _error.value = e.toString();
+          } finally {
+            _isLoading.value = false;
+          }
+        }
+      }
+      
+      initData();
+      return null;
+    }, []);
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = {getCurrentDay()};
+    // Use microtask to avoid blocking the UI during initialization
+    Future.microtask(() async {
+      await _checkConnectivity();
+      if (mounted) {
+        await _fetchUser();
+      }
+    });
+
+  Future<void> _checkConnectivity() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() {
+        _hasConnection = connectivityResult != ConnectivityResult.none;
+      });
+    }
+  }
+
+  Future<void> _fetchUser() async {
+    if (!_hasConnection) {
+      setState(() => _error = 'No internet connection');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final userEmail = Supabase.instance.client.auth.currentUser?.email;
+      if (userEmail != null) {
+        _userFuture = _userService.getUser(userEmail);
+      } else {
+        _userFuture = Future.value(null);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(100),
+            child: rkuAppBar(context)),
+        body: LoadingOverlay(
+          isLoading: _isLoading,
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 5),
+              const Text(
+                "Schedule's Days",
+                style: TextStyle(fontSize: 20),
+              ),
+              const SizedBox(
+                height: 5,
+              ),
+              Weekdays(
+                selectedDay: _selectedDay,
+              ),
+              const SizedBox(
+                height: 5,
+              ),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    RedText("Cardio"),
+                    TextButton(
+                        onPressed: null,
+                        child: Text(
+                          "see all",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ))
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 250,
+                child: _buildWorkoutList("cardio"),
+              ),
+              const SizedBox(
+                height: 5,
+              ),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    RedText("Exercise"),
+                    TextButton(
+                        onPressed: null,
+                        child: Text(
+                          "see all",
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ))
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 250,
+                child: _buildWorkoutList("exercise"),
+              ),
+            ],
+          ),
+        ),
+        if (_error != null)
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: ErrorMessage(
+              message: _error!,
+              onRetry: () {
+                setState(() => _error = null);
+                _checkConnectivity();
+                _fetchUser();
+              },
+            ),
+          ),
+        const Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: ConnectionStatus(),
+        ),
+      ]),
+    ));
+  }
+
+  Widget rkuAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: theme.colorScheme.primary,
+        child: FutureBuilder<UserModel?>(
+          future: _userFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: theme.colorScheme.onPrimary));
+            }
+
+            final user = snapshot.data;
+            final displayName = user?.name ?? user?.gmail.split('@').first ?? 'Guest';
+            final profilePicUrl = user?.profilePicture;
+
+            return Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ProfilePage()),
+                    ).then((_) => _fetchUser());
+                  },
+                  child: CircleAvatar(
+                    radius: 24.0,
+                    backgroundColor: Colors.grey,
+                    backgroundImage:
+                    profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
+                    child: profilePicUrl == null
+                        ? Icon(Icons.person, color: theme.colorScheme.onPrimary)
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Welcome,",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400)),
+                    Text(displayName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400)),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NotificationPage()),
+                      );
+                    },
+                    child: Icon(Icons.notifications, color: theme.colorScheme.onPrimary)),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkoutList(String workoutType) {
+    // Cache these values to avoid rebuilding unnecessarily
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+    final day = stringgetCurrentDay();
+    final theme = Theme.of(context);
+    
+    // Memoize the future to avoid recreating it on every build
+    final workoutsFuture = useMemoized(() => _fetchTodaysWorkouts(userEmail, day), [userEmail, day]);
+
+    return FutureBuilder<List<WorkoutTableModel>>(
+      future: _fetchTodaysWorkouts(userEmail, day),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: theme.textTheme.bodyLarge));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text("No workouts for today", style: theme.textTheme.bodyLarge));
+        }
+
+        final filteredWorkouts = snapshot.data!.where((workout) {
+          return workout.workoutType.toLowerCase() == workoutType;
+        }).toList();
+
+        if (filteredWorkouts.isEmpty) {
+          return Center(child: Text('No $workoutType workouts today', style: theme.textTheme.bodyLarge));
+        }
+
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: filteredWorkouts.length,
+          itemBuilder: (context, index) {
+            final workout = filteredWorkouts[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: WorkoutGridItem(workout: workout),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<List<WorkoutTableModel>> _fetchTodaysWorkouts(
+      String? userEmail, String day, bool hasConnection) async {
+    if (!hasConnection) {
+      throw Exception('No internet connection');
+    }
+    
+    if (userEmail == null) {
+      throw Exception('Not logged in');
+    }
+
+    try {
+      final response = await Supabase.instance.client
+          .from('schedual workout')
+          .select('*, "Workout Table"(*)')
+          .eq('user_id', userEmail)
+          .eq('day_of_week', day)
+          .maybeSingle();
+
+      if (response == null) {
+        return [];
+      }
+
+      final List<Map<String, dynamic>> workoutDataList = (response as List)
+          .where((row) => row['Workout Table'] != null)
+          .map((row) => row['Workout Table'] as Map<String, dynamic>)
+          .toList();
+
+      return workoutDataList
+          .map((data) => WorkoutTableModel.fromJson(data))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching workouts: $e');
+      return [];
+    }
+  }
+}

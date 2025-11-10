@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:rkfitness/Pages/fullWorkout.dart';
+import 'package:rkfitness/Pages/add_to_schedule_page.dart';
 import 'package:rkfitness/models/scheduled_workout_model.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
+import 'package:rkfitness/supabaseMaster/schedual_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SchedualPage extends StatefulWidget {
   final String userEmail;
-
   const SchedualPage({super.key, required this.userEmail});
 
   @override
@@ -15,6 +15,7 @@ class SchedualPage extends StatefulWidget {
 }
 
 class _SchedualPageState extends State<SchedualPage> {
+  final ScheduleWorkoutService _scheduleService = ScheduleWorkoutService();
   final List<String> daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
   String _selectedDay = 'MON';
 
@@ -28,43 +29,97 @@ class _SchedualPageState extends State<SchedualPage> {
   }
 
   void _onDeleteExercise(String scheduleId) async {
-    try {
-      await Supabase.instance.client
-          .from('schedual workout')
-          .delete()
-          .eq('id', scheduleId);
-
-      Fluttertoast.showToast(
-        msg: "Exercise removed from schedule",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      setState(() {});
-    } catch (e) {
-      print('Error deleting exercise: $e');
-      Fluttertoast.showToast(
-        msg: "Failed to remove exercise",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
+    await _scheduleService.deleteScheduleWorkout(scheduleId);
+    Fluttertoast.showToast(msg: "Exercise removed from schedule");
+    setState(() {});
   }
 
-  void _navigateToFullWorkoutPage() {}
+  void _navigateToAddWorkoutPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddToSchedulePage(
+          userEmail: widget.userEmail,
+          selectedDay: _selectedDay,
+        ),
+      ),
+    ).then((_) {
+      setState(() {});
+    });
+  }
+
+  void _showEditDialog(ScheduleWorkoutModel schedule, WorkoutTableModel workout) {
+    final theme = Theme.of(context);
+    final setsController = TextEditingController(text: schedule.customSets?.toString() ?? '');
+    final repsController = TextEditingController(text: schedule.customReps?.toString() ?? '');
+    final durationController = TextEditingController(text: schedule.customDuration?.toString() ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit ${workout.workoutName}', style: theme.textTheme.titleLarge),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (workout.workoutType.toLowerCase() == 'exercise') ...[
+                TextField(
+                  controller: setsController,
+                  decoration: const InputDecoration(labelText: 'Sets'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: repsController,
+                  decoration: const InputDecoration(labelText: 'Reps'),
+                  keyboardType: TextInputType.number,
+                ),
+              ] else ...[
+                TextField(
+                  controller: durationController,
+                  decoration: const InputDecoration(labelText: 'Duration (seconds)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ]
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final updatedSchedule = ScheduleWorkoutModel(
+                  id: schedule.id,
+                  userId: schedule.userId,
+                  workoutId: schedule.workoutId,
+                  dayOfWeek: schedule.dayOfWeek,
+                  orderInDay: schedule.orderInDay,
+                  customSets: int.tryParse(setsController.text),
+                  customReps: int.tryParse(repsController.text),
+                  customDuration: int.tryParse(durationController.text),
+                );
+
+                await _scheduleService.updateScheduleWorkout(updatedSchedule);
+
+                if (mounted) Navigator.pop(context);
+                setState(() {});
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.red,
         title: const Center(
-          child: Text('Workout Schedule', style: TextStyle(color: Colors.white)),
+          child: Text('Workout Schedule'),
         ),
       ),
       body: Column(
@@ -73,10 +128,7 @@ class _SchedualPageState extends State<SchedualPage> {
             padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
             child: SegmentedButton<String>(
               segments: daysOfWeek.map((day) {
-                return ButtonSegment<String>(
-                  value: day,
-                  label: Text(day),
-                );
+                return ButtonSegment<String>(value: day, label: Text(day));
               }).toList(),
               showSelectedIcon: false,
               selected: {_selectedDay},
@@ -86,17 +138,11 @@ class _SchedualPageState extends State<SchedualPage> {
                 });
               },
               style: ButtonStyle(
-                foregroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return Colors.white;
-                  }
-                  return Colors.black;
+                foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+                  return states.contains(MaterialState.selected) ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
                 }),
-                backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return Colors.red;
-                  }
-                  return Colors.grey[300]!;
+                backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+                  return states.contains(MaterialState.selected) ? theme.colorScheme.primary : theme.inputDecorationTheme.fillColor!;
                 }),
               ),
             ),
@@ -108,17 +154,13 @@ class _SchedualPageState extends State<SchedualPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
-
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(child: Text('No workouts scheduled.'));
                 }
-
                 final scheduledWorkouts = snapshot.data!;
-
                 return ListView.separated(
                   itemCount: scheduledWorkouts.length,
                   separatorBuilder: (context, index) => const Divider(),
@@ -126,17 +168,7 @@ class _SchedualPageState extends State<SchedualPage> {
                     final workoutData = scheduledWorkouts[index]['Workout Table'] as Map<String, dynamic>;
                     final workout = WorkoutTableModel.fromJson(workoutData);
                     final schedule = ScheduleWorkoutModel.fromJson(scheduledWorkouts[index]);
-
-                    final gifUrl = Supabase.instance.client.storage
-                        .from('image_and_gifs')
-                        .getPublicUrl(workout.gifPath ?? '');
-
-                    return _buildExerciseListItem(
-                      exerciseName: workout.workoutName,
-                      duration: workout.duration ?? 'N/A',
-                      gifUrl: gifUrl,
-                      scheduleId: schedule.id,
-                    );
+                    return _buildExerciseListItem(workout: workout, schedule: schedule);
                   },
                 );
               },
@@ -145,33 +177,43 @@ class _SchedualPageState extends State<SchedualPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToFullWorkoutPage,
-        backgroundColor: Colors.red,
-        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: _navigateToAddWorkoutPage,
+        child: const Icon(Icons.add                                                                                                                                                                                                                                                                               
+        ),
+
       ),
     );
   }
 
   Future<List<Map<String, dynamic>>> _fetchScheduledWorkoutsForDay(String day) async {
-    try {
-      final response = await Supabase.instance.client
-          .from('schedual workout')
-          .select('*, "Workout Table"(*)')
-          .eq('user_id', widget.userEmail)
-          .eq('day_of_week', day);
-      return (response as List).cast<Map<String, dynamic>>();
-    } catch (e) {
-      print('Error fetching scheduled workouts: $e');
-      return [];
-    }
+    return await _scheduleService.getScheduledWorkoutsForUserWithDetails(widget.userEmail, day);
   }
 
   Widget _buildExerciseListItem({
-    required String exerciseName,
-    required String duration,
-    required String gifUrl,
-    required String scheduleId,
+    required WorkoutTableModel workout,
+    required ScheduleWorkoutModel schedule,
   }) {
+    final theme = Theme.of(context);
+    final gifUrl = Supabase.instance.client.storage
+        .from('image_and_gifs')
+        .getPublicUrl(workout.gifPath ?? '');
+
+    String subtitleText;
+    if (workout.workoutType.toLowerCase() == 'exercise') {
+      final sets = schedule.customSets ?? workout.sets ?? 'N/A';
+      final reps = schedule.customReps ?? workout.reps ?? 'N/A';
+      subtitleText = 'Sets: $sets, Reps: $reps';
+    } else {
+      final durationInSeconds = schedule.customDuration;
+      if (durationInSeconds != null && durationInSeconds > 0) {
+        final minutes = durationInSeconds ~/ 60;
+        final seconds = durationInSeconds % 60;
+        subtitleText = 'Duration: ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      } else {
+        subtitleText = 'Duration: ${workout.duration ?? 'N/A'}';
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -181,10 +223,7 @@ class _SchedualPageState extends State<SchedualPage> {
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(
-                image: NetworkImage(gifUrl),
-                fit: BoxFit.cover,
-              ),
+              image: DecorationImage(image: NetworkImage(gifUrl), fit: BoxFit.cover),
             ),
           ),
           const SizedBox(width: 16),
@@ -193,23 +232,21 @@ class _SchedualPageState extends State<SchedualPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  exerciseName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  workout.workoutName,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Duration: $duration',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                Text(subtitleText, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _onDeleteExercise(scheduleId),
+            icon: const Icon(Icons.edit, color: Colors.grey),
+            onPressed: () => _showEditDialog(schedule, workout),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, color: theme.colorScheme.primary),
+            onPressed: () => _onDeleteExercise(schedule.id),
           ),
         ],
       ),
