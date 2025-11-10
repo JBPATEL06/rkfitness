@@ -15,7 +15,7 @@ ScheduleWorkoutModel _$ScheduleWorkoutModelFromJson(
   dayOfWeek: json['day_of_week'] as String,
   customSets: (json['custom_sets'] as num?)?.toInt(),
   customReps: (json['custom_reps'] as num?)?.toInt(),
-  customDuration: (json['custom_duration_integer'] as num?)?.toInt(),
+  customDuration: (json['custom_duration'] as num?)?.toInt(),
   orderInDay: (json['order_in_day'] as num?)?.toInt(),
 );
 
@@ -28,6 +28,6 @@ Map<String, dynamic> _$ScheduleWorkoutModelToJson(
   'day_of_week': instance.dayOfWeek,
   'custom_sets': instance.customSets,
   'custom_reps': instance.customReps,
-  'custom_duration_integer': instance.customDuration,
+  'custom_duration': instance.customDuration,
   'order_in_day': instance.orderInDay,
 };

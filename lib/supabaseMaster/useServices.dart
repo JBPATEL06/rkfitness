@@ -1,63 +1,70 @@
-// user_service.dart
-
+// lib/supabaseMaster/useServices.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 import '../models/user_model.dart';
 
 class UserService {
   final SupabaseClient _supabaseClient = Supabase.instance.client;
 
-  // READ: Fetch a single user by their email (primary key)
   Future<UserModel?> getUser(String userGmail) async {
     try {
       final response = await _supabaseClient
-          .from('USER')
+          .from('User')
+      // CORRECTED: Uses "Gmail" to match your SQL table
           .select()
-          .eq('gmail', userGmail)
+          .eq('Gmail', userGmail)
           .single();
 
-      if (response != null) {
-        return UserModel.fromJson(response);
-      }
-    } catch (e) {
-      print('Error getting user: $e');
+      return UserModel.fromJson(response);
+    } catch (e, st) {
+      Logger.error('Error getting user', e, st);
+      return null;
     }
-    return null;
   }
 
-  // CREATE: Insert a new user record
+  Future<List<UserModel>> getAllUsers() async {
+    try {
+      final response = await _supabaseClient.from('User').select();
+      return (response as List)
+          .map((user) => UserModel.fromJson(user))
+          .toList();
+    } catch (e, st) {
+      Logger.error('Error getting all users', e, st);
+      return [];
+    }
+  }
+
   Future<void> createUser(UserModel user) async {
     try {
-      await _supabaseClient.from('USER').insert(user.toJson());
-    } on PostgrestException catch (e) {
-      // Supabase-specific error for unique constraint violation
+      await _supabaseClient.from('User').insert(user.toJson());
+    } on PostgrestException catch (e, st) {
       if (e.code == '23505') {
-        print('User with this email already exists.');
+        Logger.info('User with this email already exists.');
       } else {
-        print('Error creating user: $e');
+        Logger.error('Error creating user', e, st);
       }
-    } catch (e) {
-      print('Error creating user: $e');
+    } catch (e, st) {
+      Logger.error('Error creating user', e, st);
     }
   }
 
-  // UPDATE: Update an existing user's data
   Future<void> updateUser(UserModel user) async {
     try {
       await _supabaseClient
-          .from('USER')
+          .from('User')
           .update(user.toJson())
-          .eq('gmail', user.gmail);
-    } catch (e) {
-      print('Error updating user: $e');
+      // CORRECTED: Uses "Gmail" to match your SQL table
+          .eq('Gmail', user.gmail);
+    } catch (e, st) {
+      Logger.error('Error updating user', e, st);
     }
   }
 
-  // DELETE: Delete a user record by their email
   Future<void> deleteUser(String userGmail) async {
     try {
-      await _supabaseClient.from('USER').delete().eq('gmail', userGmail);
-    } catch (e) {
-      print('Error deleting user: $e');
+      await _supabaseClient.from('User').delete().eq('Gmail', userGmail);
+    } catch (e, st) {
+      Logger.error('Error deleting user', e, st);
     }
   }
 }

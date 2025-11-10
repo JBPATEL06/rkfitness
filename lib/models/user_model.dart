@@ -1,31 +1,36 @@
-// user_model.dart
-
+// lib/models/user_model.dart
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user_model.g.dart';
 
 @JsonSerializable()
 class UserModel {
+  @JsonKey(name: 'Gmail')
   final String gmail;
-  final String? name; // Added name field
-  final String? phone; // Added phone field
+  final String? name;
+  // final String? phone; // REMOVED
   final double? weight;
   final double? bmi;
   final String? gender;
   final int? age;
+
+  @JsonKey(name: 'Streak')
   final int? streak;
+
   @JsonKey(name: 'wokrout time')
   final String? workoutTime;
   final double? height;
+
   @JsonKey(name: 'Profile Picture')
   final String? profilePicture;
 
+  @JsonKey(name: 'userType')
   final String? userType;
 
   UserModel({
     required this.gmail,
-    this.name, // Added to constructor
-    this.phone, // Added to constructor
+    this.name,
+    // this.phone, // REMOVED
     this.weight,
     this.bmi,
     this.gender,
@@ -37,7 +42,8 @@ class UserModel {
     this.userType,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$UserModelToJson(this);
 }

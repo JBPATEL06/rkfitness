@@ -1,102 +1,142 @@
-// workout_page.dart
-
 import 'package:flutter/material.dart';
-import 'package:rkfitness/customeWidAndFun.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:rkfitness/models/workout_table_model.dart';
+import 'package:provider/provider.dart';
+import 'package:rkfitness/providers/workout_provider.dart';
+import 'package:rkfitness/widgets/workout_grid_item.dart';
+import 'package:rkfitness/widgets/loading_overlay.dart';
+import 'package:rkfitness/widgets/error_message.dart';
+import 'package:rkfitness/widgets/connection_status.dart';
 
-class WorkoutPage extends StatelessWidget {
+class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
 
-  Widget _buildWorkoutGrid(BuildContext context, String category) {
-    CustomeWidAndFun mywidget = CustomeWidAndFun();
+  @override
+  State<WorkoutPage> createState() => _WorkoutPageState();
+}
 
-    return FutureBuilder<List<WorkoutTableModel>>(
-      future: _fetchWorkoutsByCategory(category),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+class _WorkoutPageState extends State<WorkoutPage> {
+  String _selectedTab = 'Cardio';
 
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No workouts found.'));
-        }
-
-        final workouts = snapshot.data!;
-
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.6,
-          ),
-          itemCount: workouts.length,
-          itemBuilder: (context, index) {
-            final workout = workouts[index];
-            final gifUrl = Supabase.instance.client.storage
-                .from('image_and_gifs')
-                .getPublicUrl(workout.gifPath ?? '');
-
-            return mywidget.workout12(
-              context,
-              gifUrl,
-              workout.workoutName,
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<List<WorkoutTableModel>> _fetchWorkoutsByCategory(String category) async {
-    try {
-      final response = await Supabase.instance.client
-          .from('Workout Table')
-          .select()
-          .eq('Workout type', category);
-
-      if (response.isEmpty) {
-        return [];
-      }
-
-      return response.map((data) => WorkoutTableModel.fromJson(data)).toList();
-    } catch (e) {
-      print('Error fetching workouts: $e');
-      return [];
-    }
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WorkoutProvider>(context, listen: false)
+          .fetchWorkoutsByCategory(_selectedTab.toLowerCase());
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
+    final theme = Theme.of(context);
+    final workoutProvider = context.watch<WorkoutProvider>();
+    
+    return Scaffold(
         appBar: AppBar(
-          title: const Text('WORKOUT', style: TextStyle(color: Colors.white)),
-          centerTitle: true,
-          backgroundColor: Colors.red[700],
-          bottom: TabBar(
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey[400],
-            tabs: const [
-              Tab(text: 'Cardio'),
-              Tab(text: 'Exercise'),
-            ],
-          ),
+          title: const Text('WORKOUT'),
         ),
-        body: TabBarView(
-          children: [
-            // Note the corrected lowercase strings here
-            _buildWorkoutGrid(context, 'cardio'),
-            _buildWorkoutGrid(context, 'exercise'),
-          ],
+        body: Column(
+        children: [
+          ConnectionStatus(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: theme.colorScheme.primary,
+              ),
+              child: Row(
+                children: [
+                  _buildTabItem('Cardio'),
+                  _buildTabItem('Exercise'),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Consumer<WorkoutProvider>(
+              builder: (context, provider, child) {
+                if (provider.error != null) {
+                  return ErrorMessage(
+                    message: 'Error loading workouts',
+                    onRetry: () => provider.fetchWorkoutsByCategory(_selectedTab.toLowerCase()),
+                  );
+                }
+
+                final workouts = provider.workouts[_selectedTab.toLowerCase()] ?? [];
+
+                if (workouts.isEmpty && !provider.isLoading) {
+                  return const Center(
+                    child: Text(
+                      'No workouts found in this category.',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  );
+                }
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount;
+                    if (constraints.maxWidth > 1200) {
+                      crossAxisCount = 4;
+                    } else if (constraints.maxWidth > 800) {
+                      crossAxisCount = 3;
+                    } else {
+                      crossAxisCount = 2;
+                    }
+                    return LoadingOverlay(
+                      isLoading: provider.isLoading,
+                      message: 'Loading workouts...',
+                      child: GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.6,
+                        ),
+                        itemCount: workouts.length,
+                        itemBuilder: (context, index) {
+                          final workout = workouts[index];
+                          return WorkoutGridItem(workout: workout);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem(String title) {
+    final theme = Theme.of(context);
+    final isSelected = _selectedTab == title;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedTab = title;
+            Provider.of<WorkoutProvider>(context, listen: false)
+                .fetchWorkoutsByCategory(_selectedTab.toLowerCase());
+          });
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? theme.colorScheme.secondary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ),
       ),
     );

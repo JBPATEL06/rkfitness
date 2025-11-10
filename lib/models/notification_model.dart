@@ -4,12 +4,13 @@ part 'notification_model.g.dart';
 
 @JsonSerializable()
 class NotificationModel {
-  final int id;
+  final String? id; // FIXED: Changed to String? to match UUID table definition
+  @JsonKey(name: 'tittle') // FIX: Map the database column name 'tittle'
   final String? title;
   final String? description;
 
   NotificationModel({
-    required this.id,
+    this.id,
     this.title,
     this.description,
   });

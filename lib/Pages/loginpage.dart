@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rkfitness/AdminMaster/admin_Dashboard.dart';
+import 'package:rkfitness/forget_password.dart';
 import 'package:rkfitness/Pages/user_dashboard.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:rkfitness/main.dart';
+import 'package:rkfitness/providers/auth_provider.dart';
+import 'package:rkfitness/utils/responsive.dart';
+import 'package:rkfitness/widgets/loading_overlay.dart';
+import 'package:rkfitness/widgets/connection_status.dart';
+import 'package:rkfitness/widgets/error_message.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -12,26 +17,19 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final supabase = Supabase.instance.client;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  Future<void> login() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
+  Future<void> _login(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+    
     try {
-      final response = await supabase.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final userEmail = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      Navigator.of(context).pop(); // Close loading dialog
+      await authProvider.login(userEmail, password);
 
-      // Success
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
@@ -39,134 +37,188 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
 
-      if (response.user != null) {
-        final session = Supabase.instance.client.auth.currentSession;
-        debugPrint("🔐 Session: ${response.session?.accessToken}");
+      if (authProvider.currentUser?.userType == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => UserDashBoard()),
+          MaterialPageRoute(builder: (context) => const AdminDashboard()),
         );
       } else {
-        debugPrint("Error in session set: ${response.user}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const UserDashBoard()),
+        );
       }
-      // Navigate to Home
-    } on AuthException catch (e) {
-      Navigator.of(context).pop(); // Close loading dialog
-      debugPrint("Login error code: ${e.code}");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(backgroundColor: Colors.red, content: Text(e.message)),
-      );
     } catch (e) {
-      Navigator.of(context).pop();
-      debugPrint("Unexpected Error: $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           backgroundColor: Colors.red,
-          content: Text("An unexpected error occurred."),
+          content: Text(e.toString()),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: () => _login(context),
+          ),
         ),
       );
     }
-
-    @override
-    void dispose() {
-      _emailController.dispose();
-      _passwordController.dispose();
-      super.dispose();
-    }
   }
+
+  Future<void> _createAndProvisionNewUser(String userEmail) async {
+    // Deprecated: user provisioning is now handled in AuthProvider.
+    // Removed to reduce duplicate provisioning logic.
+    return;
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SingleChildScrollView(
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("assets/images/login_background.png"),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 100),
-                  const Text(
-                    "RKU Fitness",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 50),
-                  Card(
-                    elevation: 4,
-                    color: Colors.white12,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                      child: TextField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          icon: Icon(Icons.email, color: Colors.white),
-                          hintText: "example@gmail.com",
-                          hintStyle: TextStyle(color: Colors.white54),
-                          labelText: "Email",
-                          labelStyle: TextStyle(color: Colors.white),
-                          border: InputBorder.none,
-                        ),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 4,
-                    color: Colors.white12,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                      child: TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          icon: Icon(Icons.lock, color: Colors.white),
-                          labelText: "Password",
-                          labelStyle: TextStyle(color: Colors.white),
-                          border: InputBorder.none,
-                        ),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[900],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                    ),
-                    onPressed: login,
-                    child: const Text(
-                            "Login",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                  ),
-                  SizedBox(height: 30,),
+    final theme = Theme.of(context);
+    final authProvider = context.watch<AuthProvider>();
 
-                ],
+    return LoadingOverlay(
+      isLoading: authProvider.isLoading,
+      message: 'Logging in...',
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: Colors.black,
+            body: SingleChildScrollView(
+              child: Container(
+                height: Responsive.screenHeight(context),
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage("assets/images/login_background.png"),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(Responsive.getProportionateScreenWidth(context, 20)),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 100)),
+                        Text(
+                          "RKU Fitness",
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: Responsive.getProportionateScreenWidth(context, 36),
+                          ),
+                        ),
+                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 50)),
+                        _buildDarkTextField(_emailController, "Email", Icons.email),
+                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                        _buildDarkTextField(_passwordController, "Password", Icons.lock, true),
+                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(Responsive.getProportionateScreenWidth(context, 12)),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: Responsive.getProportionateScreenWidth(context, 50),
+                              vertical: Responsive.getProportionateScreenHeight(context, 15),
+                            ),
+                          ),
+                          onPressed: () => _login(context),
+                          child: Text(
+                            "Login",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontSize: Responsive.getProportionateScreenWidth(context, 18),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 50)),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(Responsive.getProportionateScreenWidth(context, 12)),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: Responsive.getProportionateScreenWidth(context, 50),
+                              vertical: Responsive.getProportionateScreenHeight(context, 15),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const Forgetpassword()),
+                            );
+                          },
+                          child: Text(
+                            "forget Password",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontSize: Responsive.getProportionateScreenWidth(context, 18),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 30)),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
+          if (authProvider.error != null)
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 16,
+              left: 16,
+              right: 16,
+              child: ErrorMessage(
+                message: authProvider.error!,
+                compact: true,
+                onRetry: () => _login(context),
+              ),
+            ),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: ConnectionStatus(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDarkTextField(TextEditingController controller, String labelText, IconData icon, [bool obscureText = false]) {
+    return Card(
+      elevation: 4,
+      color: Colors.white12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: Responsive.getProportionateScreenWidth(context, 15),
+          vertical: Responsive.getProportionateScreenHeight(context, 5),
+        ),
+        child: TextField(
+          controller: controller,
+          obscureText: obscureText,
+          decoration: InputDecoration(
+            icon: Icon(icon, color: Colors.white),
+            hintText: labelText == "Email" ? "example@gmail.com" : null,
+            hintStyle: TextStyle(color: Colors.white54, fontSize: Responsive.getProportionateScreenWidth(context, 14)),
+            labelText: labelText,
+            labelStyle: TextStyle(color: Colors.white, fontSize: Responsive.getProportionateScreenWidth(context, 16)),
+            border: InputBorder.none,
+            fillColor: Colors.transparent,
+          ),
+          style: TextStyle(color: Colors.white, fontSize: Responsive.getProportionateScreenWidth(context, 16)),
         ),
       ),
     );
