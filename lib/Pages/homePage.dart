@@ -68,20 +68,33 @@ class HomePage extends HookWidget {
             .eq('user_id', userEmail)
             .eq('day_of_week', day);
 
-        if (response == null) {
+        if (response is! List) {
           return <WorkoutTableModel>[];
         }
 
-        final List<Map<String, dynamic>> workoutDataList = (response as List)
-            .where((row) => row['Workout Table'] != null)
-            .map((row) => row['Workout Table'] as Map<String, dynamic>)
+        // Defensive parsing logic:
+        final List<Map<String, dynamic>> workoutDataList = (response as List<dynamic>)
+            .whereType<Map<String, dynamic>>()
+            .map((row) {
+                // Safely extract the nested workout data. Use a default empty map if not found or wrong type.
+                final nestedData = row['Workout Table'];
+                return nestedData is Map<String, dynamic> ? nestedData : <String, dynamic>{};
+            })
+            .where((data) {
+                // Ensure the fundamental non-nullable fields exist and are correct type before parsing.
+                return data.isNotEmpty && 
+                       data.containsKey('Workout id') && data['Workout id'] is String &&
+                       data.containsKey('Workout Name') && data['Workout Name'] is String &&
+                       data.containsKey('Workout type') && data['Workout type'] is String;
+            })
             .toList();
 
         return workoutDataList
             .map((data) => WorkoutTableModel.fromJson(data))
             .toList();
       } catch (e) {
-        error.value = e.toString();
+        // Log a more specific error in case of crash during data mapping
+        error.value = 'Data loading error: ${e.toString()}';
         return <WorkoutTableModel>[];
       }
     }, [hasConnection]);
@@ -103,16 +116,19 @@ class HomePage extends HookWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: theme.textTheme.bodyLarge));
+          final displayError = error.value;
+          if (displayError != null && displayError.isNotEmpty) {
+             // If a caught API/data error exists, show that instead of the list
+             return Center(child: Text(displayError, style: theme.textTheme.bodyLarge));
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No workouts for today", style: theme.textTheme.bodyLarge));
+            return Center(child: Text("No workouts scheduled for today", style: theme.textTheme.bodyLarge));
           }
 
           final filteredWorkouts = snapshot.data!.where((workout) {
-            return workout.workoutType.toLowerCase() == workoutType;
+            // Null check for safety, although the defensive parsing should prevent it.
+            return workout.workoutType != null && workout.workoutType.toLowerCase() == workoutType;
           }).toList();
 
           if (filteredWorkouts.isEmpty) {
@@ -240,10 +256,10 @@ class HomePage extends HookWidget {
                         ],
                       ),
                     ),
-                    SizedBox(
-                      height: 250,
-                      child: buildWorkoutList("cardio"),
-                    ),
+                    // SizedBox(
+                    //   height: 250,
+                    //   child: buildWorkoutList("cardio"),
+                    // ),
                     const SizedBox(height: 5),
                     const Padding(
                       padding: EdgeInsets.all(8.0),
@@ -260,14 +276,14 @@ class HomePage extends HookWidget {
                         ],
                       ),
                     ),
-                    SizedBox(
-                      height: 250,
-                      child: buildWorkoutList("exercise"),
-                    ),
+                    // SizedBox(
+                    //   height: 250,
+                    //   child: buildWorkoutList("exercise"),
+                    // ),
                   ],
                 ),
               ),
-              if (error.value != null)
+              if (error.value != null && !error.value!.contains('Data loading error'))
                 Positioned(
                   bottom: 16,
                   left: 16,
