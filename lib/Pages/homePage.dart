@@ -10,6 +10,7 @@ import 'package:rkfitness/widgets/error_message.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:rkfitness/utils/responsive.dart'; // Import Responsive here
 
 import '../models/user_model.dart';
 import '../models/workout_table_model.dart';
@@ -132,6 +133,7 @@ class HomePage extends HookWidget {
           }
 
           final filteredWorkouts = snapshot.data!.where((workout) {
+            // Null check for safety, although the defensive parsing should prevent it.
             return workout.workoutType != null && workout.workoutType.toLowerCase() == workoutType;
           }).toList();
 
@@ -146,7 +148,11 @@ class HomePage extends HookWidget {
               final workout = filteredWorkouts[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: WorkoutGridItem(workout: workout),
+                // FIX: Constrain the width of WorkoutGridItem
+                child: SizedBox( 
+                  width: Responsive.responsiveWidth(context, 45), // Use 45% of screen width for fixed size
+                  child: WorkoutGridItem(workout: workout),
+                ),
               );
             },
           );
@@ -260,7 +266,6 @@ class HomePage extends HookWidget {
                         ],
                       ),
                     ),
-                    // <--- UNCOMMENT THIS SECTION --->
                     SizedBox( 
                       height: 250,
                       child: buildWorkoutList("cardio"),
@@ -281,7 +286,6 @@ class HomePage extends HookWidget {
                         ],
                       ),
                     ),
-                    // <--- UNCOMMENT THIS SECTION --->
                     SizedBox(
                       height: 250,
                       child: buildWorkoutList("exercise"),
