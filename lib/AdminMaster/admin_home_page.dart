@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// ADDED import for screenutil extensions (.w, .h, .sp, .r)
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:rkfitness/AdminMaster/admin_profile.dart';
 import 'package:rkfitness/AdminMaster/admin_notification.dart';
@@ -8,7 +10,7 @@ import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:rkfitness/supabaseMaster/workout_services.dart';
 import 'package:rkfitness/widgets/custom_widgets.dart';
-import 'package:rkfitness/utils/responsive.dart';
+// REMOVED: import 'package:rkfitness/utils/responsive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminHome extends StatefulWidget {
@@ -104,10 +106,10 @@ class _AdminHomeState extends State<AdminHome> {
 
         return Scaffold(
           appBar: AppBar(
-            toolbarHeight: 80,
+            toolbarHeight: 80.h, // CONVERTED
             backgroundColor: theme.colorScheme.primary,
             title: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.symmetric(horizontal: 16.w), // CONVERTED
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -123,16 +125,17 @@ class _AdminHomeState extends State<AdminHome> {
                           );
                         },
                         child: CircleAvatar(
+                          radius: 25.r, // CONVERTED
                           backgroundColor: Colors.white,
                           backgroundImage: admin?.profilePicture != null
                               ? NetworkImage(admin!.profilePicture!)
                               : null,
                           child: admin?.profilePicture == null
-                              ? Icon(Icons.person, color: Colors.grey.shade600)
+                              ? Icon(Icons.person, color: Colors.grey.shade600, size: 30.w) // CONVERTED
                               : null,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10.w), // CONVERTED
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -156,15 +159,15 @@ class _AdminHomeState extends State<AdminHome> {
                                   const SendNotificationPage()),
                         );
                       },
-                      child: const Icon(Icons.notifications,
-                          color: Colors.white, size: 30)),
+                      child: Icon(Icons.notifications,
+                          color: Colors.white, size: 30.w)), // CONVERTED
                 ],
               ),
             ),
           ),
           body: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(16.w), // CONVERTED
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -179,17 +182,17 @@ class _AdminHomeState extends State<AdminHome> {
                           totalExercise, Icons.sports_gymnastics),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h), // CONVERTED
                   Text(
                     'User Stats',
                     style:
                         theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10.h), // CONVERTED
                   _buildUserChart(theme),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h), // CONVERTED
                   _buildWorkoutSection(context, 'Cardio', cardioWorkouts),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h), // CONVERTED
                   _buildWorkoutSection(
                       context, 'Exercise', exerciseWorkouts),
                 ],
@@ -207,9 +210,9 @@ class _AdminHomeState extends State<AdminHome> {
     return Expanded(
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)), // CONVERTED
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16.w), // CONVERTED
           child: Column(
             children: [
               Text('$value',
@@ -217,7 +220,7 @@ class _AdminHomeState extends State<AdminHome> {
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary)),
               Icon(icon, color: theme.colorScheme.primary),
-              const SizedBox(height: 5),
+              SizedBox(height: 5.h), // CONVERTED
               Text(title, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
             ],
           ),
@@ -231,21 +234,21 @@ class _AdminHomeState extends State<AdminHome> {
       aspectRatio: 1.5,
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)), // CONVERTED
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16.w), // CONVERTED
           child: Row(
             children: [
               Expanded(
                 child: PieChart(
                   PieChartData(
                     sections: _buildChartSections(theme),
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 40,
+                    sectionsSpace: 2.w, // CONVERTED
+                    centerSpaceRadius: 40.r, // CONVERTED
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: 20.w), // CONVERTED
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,7 +271,7 @@ class _AdminHomeState extends State<AdminHome> {
         color: Colors.orange,
         value: 50,
         title: '50.0%',
-        radius: 60,
+        radius: 60.r, // CONVERTED
         titleStyle: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold, color: Colors.white),
       ),
@@ -276,7 +279,7 @@ class _AdminHomeState extends State<AdminHome> {
         color: Colors.purple,
         value: 26.7,
         title: '26.7%',
-        radius: 60,
+        radius: 60.r, // CONVERTED
         titleStyle: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold, color: Colors.white),
       ),
@@ -284,7 +287,7 @@ class _AdminHomeState extends State<AdminHome> {
         color: theme.colorScheme.primary,
         value: 23.3,
         title: '23.3%',
-        radius: 60,
+        radius: 60.r, // CONVERTED
         titleStyle: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold, color: Colors.white),
       ),
@@ -294,11 +297,11 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _buildLegend(String title, Color color) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: EdgeInsets.symmetric(vertical: 4.h), // CONVERTED
       child: Row(
         children: [
-          Container(width: 16, height: 16, color: color),
-          const SizedBox(width: 8),
+          Container(width: 16.w, height: 16.w, color: color), // CONVERTED to square proportional to width
+          SizedBox(width: 8.w), // CONVERTED
           Text(title, style: theme.textTheme.bodyLarge),
         ],
       ),
@@ -308,6 +311,9 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _buildWorkoutSection(BuildContext context, String title,
       List<WorkoutTableModel> workouts) {
     final theme = Theme.of(context);
+    // Determine the desired height for the list view (e.g., 35% of 690 design height)
+    final listHeight = 250.h; 
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -328,18 +334,19 @@ class _AdminHomeState extends State<AdminHome> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10.h), // CONVERTED
         SizedBox(
-          height: Responsive.responsiveHeight(context, 35),
+          height: listHeight,
           child: workouts.isEmpty
               ? Center(child: Text('No $title workouts found.', style: theme.textTheme.bodyLarge))
               : SizedBox(
-                    height: Responsive.responsiveHeight(context, 30),
+                    height: listHeight,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: workouts.length,
                       itemBuilder: (context, index) {
                         final workoutData = workouts[index];
+                        // The workout widget uses its internal responsiveness now
                         return mywidget.workout(context, workoutData); 
                       },
                     ),

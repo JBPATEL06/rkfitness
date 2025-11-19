@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:provider/provider.dart';
 import 'package:rkfitness/AdminMaster/admin_Dashboard.dart';
 import 'package:rkfitness/forget_password.dart';
 import 'package:rkfitness/Pages/user_dashboard.dart';
 import 'package:rkfitness/providers/auth_provider.dart';
-import 'package:rkfitness/utils/responsive.dart';
+// REMOVED: import 'package:rkfitness/utils/responsive.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:rkfitness/widgets/connection_status.dart';
 import 'package:rkfitness/widgets/error_message.dart';
@@ -91,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.black,
             body: SingleChildScrollView(
               child: Container(
-                height: Responsive.screenHeight(context),
+                height: 1.sh, // Use ScreenUtil.sh for full screen height
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage("assets/images/login_background.png"),
@@ -100,33 +101,33 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child: Center(
                   child: Padding(
-                    padding: EdgeInsets.all(Responsive.getProportionateScreenWidth(context, 20)),
+                    padding: EdgeInsets.all(20.w),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 100)),
+                        SizedBox(height: 100.h),
                         Text(
                           "RKU Fitness",
                           style: theme.textTheme.displaySmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: Responsive.getProportionateScreenWidth(context, 36),
+                            fontSize: 36.sp,
                           ),
                         ),
-                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 50)),
+                        SizedBox(height: 50.h),
                         _buildDarkTextField(_emailController, "Email", Icons.email),
-                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                        SizedBox(height: 20.h),
                         _buildDarkTextField(_passwordController, "Password", Icons.lock, true),
-                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                        SizedBox(height: 20.h),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: theme.colorScheme.primary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(Responsive.getProportionateScreenWidth(context, 12)),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                             padding: EdgeInsets.symmetric(
-                              horizontal: Responsive.getProportionateScreenWidth(context, 50),
-                              vertical: Responsive.getProportionateScreenHeight(context, 15),
+                              horizontal: 50.w,
+                              vertical: 15.h,
                             ),
                           ),
                           onPressed: () => _login(context),
@@ -134,20 +135,20 @@ class _LoginPageState extends State<LoginPage> {
                             "Login",
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: Colors.white,
-                              fontSize: Responsive.getProportionateScreenWidth(context, 18),
+                              fontSize: 18.sp,
                             ),
                           ),
                         ),
-                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 50)),
+                        SizedBox(height: 50.h),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: theme.colorScheme.primary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(Responsive.getProportionateScreenWidth(context, 12)),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                             padding: EdgeInsets.symmetric(
-                              horizontal: Responsive.getProportionateScreenWidth(context, 50),
-                              vertical: Responsive.getProportionateScreenHeight(context, 15),
+                              horizontal: 50.w,
+                              vertical: 15.h,
                             ),
                           ),
                           onPressed: () {
@@ -160,11 +161,11 @@ class _LoginPageState extends State<LoginPage> {
                             "forget Password",
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: Colors.white,
-                              fontSize: Responsive.getProportionateScreenWidth(context, 18),
+                              fontSize: 18.sp,
                             ),
                           ),
                         ),
-                        SizedBox(height: Responsive.getProportionateScreenHeight(context, 30)),
+                        SizedBox(height: 30.h),
                       ],
                     ),
                   ),
@@ -174,9 +175,9 @@ class _LoginPageState extends State<LoginPage> {
           ),
           if (authProvider.error != null)
             Positioned(
-              bottom: MediaQuery.of(context).padding.bottom + 16,
-              left: 16,
-              right: 16,
+              bottom: MediaQuery.of(context).padding.bottom + 16.h,
+              left: 16.w,
+              right: 16.w,
               child: ErrorMessage(
                 message: authProvider.error!,
                 compact: true,
@@ -199,12 +200,12 @@ class _LoginPageState extends State<LoginPage> {
       elevation: 4,
       color: Colors.white12,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(15.r),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: Responsive.getProportionateScreenWidth(context, 15),
-          vertical: Responsive.getProportionateScreenHeight(context, 5),
+          horizontal: 15.w,
+          vertical: 5.h,
         ),
         child: TextField(
           controller: controller,
@@ -212,13 +213,13 @@ class _LoginPageState extends State<LoginPage> {
           decoration: InputDecoration(
             icon: Icon(icon, color: Colors.white),
             hintText: labelText == "Email" ? "example@gmail.com" : null,
-            hintStyle: TextStyle(color: Colors.white54, fontSize: Responsive.getProportionateScreenWidth(context, 14)),
+            hintStyle: TextStyle(color: Colors.white54, fontSize: 14.sp),
             labelText: labelText,
-            labelStyle: TextStyle(color: Colors.white, fontSize: Responsive.getProportionateScreenWidth(context, 16)),
+            labelStyle: TextStyle(color: Colors.white, fontSize: 16.sp),
             border: InputBorder.none,
             fillColor: Colors.transparent,
           ),
-          style: TextStyle(color: Colors.white, fontSize: Responsive.getProportionateScreenWidth(context, 16)),
+          style: TextStyle(color: Colors.white, fontSize: 16.sp),
         ),
       ),
     );

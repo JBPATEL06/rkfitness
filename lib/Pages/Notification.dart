@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:rkfitness/models/notification_model.dart';
 import 'package:rkfitness/supabaseMaster/notification_services.dart';
 
@@ -43,23 +44,23 @@ class _NotificationPageState extends State<NotificationPage> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No new notifications.'));
+            return Center(child: Text('No new notifications.'));
           }
 
           final notifications = snapshot.data!;
           return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.w), // CONVERTED
             itemCount: notifications.length,
             itemBuilder: (context, index) {
               final item = notifications[index];
               return Card(
                 elevation: 2,
-                margin: const EdgeInsets.only(bottom: 16.0),
+                margin: EdgeInsets.only(bottom: 16.h), // CONVERTED
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r), // CONVERTED
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h), // CONVERTED
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -70,7 +71,7 @@ class _NotificationPageState extends State<NotificationPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h), // CONVERTED
                       Text(
                         item.description ?? 'No Description',
                         style: theme.textTheme.bodyMedium?.copyWith(

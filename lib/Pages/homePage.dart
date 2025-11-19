@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:rkfitness/Pages/profilepage.dart';
 import 'package:rkfitness/customWidgets/weekdays.dart';
 import 'package:rkfitness/customeWidAndFun.dart';
@@ -10,6 +11,7 @@ import 'package:rkfitness/widgets/error_message.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:rkfitness/supabaseMaster/user_progress_services.dart'; // ADDED
 
 import '../models/user_model.dart';
 import '../models/workout_table_model.dart';
@@ -21,13 +23,18 @@ class HomePage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final userService = useMemoized(() => UserService());
+    // ADDED: Progress Service dependency
+    final progressService = useMemoized(() => UserProgressService());
+    
     final isLoading = useState(false);
     final error = useState<String?>(null);
     final selectedDay = useState<Set<Days>>({getCurrentDay()});
     final hasConnection = useState(true);
     final userFuture = useState<Future<UserModel?>?>(null);
+    // NEW STATE: Cache for today's completed workout IDs
+    final completedWorkouts = useState<Set<String>>({});
 
-    // Initialize data fetching
+    // Fetch user details and completed workout IDs
     useEffect(() {
       Future<void> initData() async {
         final connectivityResult = await Connectivity().checkConnectivity();
@@ -39,6 +46,10 @@ class HomePage extends HookWidget {
             isLoading.value = true;
             error.value = null;
             userFuture.value = userService.getUser(userEmail);
+
+            // NEW: Fetch completed workout IDs
+            completedWorkouts.value = await progressService.getCompletedWorkoutIdsForToday(userEmail);
+
           } catch (e) {
             error.value = e.toString();
           } finally {
@@ -68,23 +79,34 @@ class HomePage extends HookWidget {
             .eq('user_id', userEmail)
             .eq('day_of_week', day);
 
-        if (response == null) {
+        if (response is! List) {
           return <WorkoutTableModel>[];
         }
 
-        final List<Map<String, dynamic>> workoutDataList = (response as List)
-            .where((row) => row['Workout Table'] != null)
-            .map((row) => row['Workout Table'] as Map<String, dynamic>)
+        // Defensive parsing logic
+        final List<WorkoutTableModel> scheduledWorkouts = (response as List<dynamic>)
+            .whereType<Map<String, dynamic>>()
+            .map((row) {
+                final nestedData = row['Workout Table'];
+                return nestedData is Map<String, dynamic> ? WorkoutTableModel.fromJson(nestedData) : null;
+            })
+            .where((workout) => workout != null)
+            .cast<WorkoutTableModel>()
             .toList();
+            
+        // NEW FILTERING LOGIC: Remove workouts that are already in the completedWorkouts set
+        final filteredWorkouts = scheduledWorkouts.where((workout) {
+          // Check if the workout ID is NOT in the set of completed IDs
+          return !completedWorkouts.value.contains(workout.workoutId);
+        }).toList();
 
-        return workoutDataList
-            .map((data) => WorkoutTableModel.fromJson(data))
-            .toList();
+
+        return filteredWorkouts;
       } catch (e) {
-        error.value = e.toString();
+        error.value = 'Data loading error: ${e.toString()}';
         return <WorkoutTableModel>[];
       }
-    }, [hasConnection]);
+    }, [hasConnection, completedWorkouts]); // Depend on completedWorkouts state
 
     Widget buildWorkoutList(String workoutType) {
       final userEmail = Supabase.instance.client.auth.currentUser?.email;
@@ -93,7 +115,7 @@ class HomePage extends HookWidget {
       
       final workoutsFuture = useMemoized(
         () => fetchTodaysWorkouts(userEmail, day),
-        [userEmail, day]
+        [userEmail, day, completedWorkouts.value] // Trigger refetch when completedWorkouts changes
       );
 
       return FutureBuilder<List<WorkoutTableModel>>(
@@ -103,20 +125,21 @@ class HomePage extends HookWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
+          final displayError = error.value;
+          if (displayError != null && displayError.isNotEmpty) {
+             return Center(child: Text(displayError, style: theme.textTheme.bodyLarge));
+          }
+
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: theme.textTheme.bodyLarge));
+             return Center(child: Text('Snapshot Error: ${snapshot.error.toString()}', style: theme.textTheme.bodyLarge));
           }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No workouts for today", style: theme.textTheme.bodyLarge));
-          }
-
-          final filteredWorkouts = snapshot.data!.where((workout) {
+          final filteredWorkouts = snapshot.data?.where((workout) {
             return workout.workoutType.toLowerCase() == workoutType;
-          }).toList();
+          }).toList() ?? [];
 
           if (filteredWorkouts.isEmpty) {
-            return Center(child: Text('No $workoutType workouts today', style: theme.textTheme.bodyLarge));
+            return Center(child: Text("No $workoutType workouts scheduled or remaining today", style: theme.textTheme.bodyLarge));
           }
 
           return ListView.builder(
@@ -125,8 +148,11 @@ class HomePage extends HookWidget {
             itemBuilder: (context, index) {
               final workout = filteredWorkouts[index];
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: WorkoutGridItem(workout: workout),
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                child: SizedBox( 
+                  width: 160.w,
+                  child: WorkoutGridItem(workout: workout),
+                ),
               );
             },
           );
@@ -138,7 +164,7 @@ class HomePage extends HookWidget {
       final theme = Theme.of(context);
       return SafeArea(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           color: theme.colorScheme.primary,
           child: FutureBuilder<UserModel?>(
             future: userFuture.value,
@@ -162,19 +188,22 @@ class HomePage extends HookWidget {
                         final userEmail = Supabase.instance.client.auth.currentUser?.email;
                         if (userEmail != null) {
                           userFuture.value = userService.getUser(userEmail);
+                          // Refresh the completed list when returning from profile/full workout page
+                          progressService.getCompletedWorkoutIdsForToday(userEmail)
+                            .then((ids) => completedWorkouts.value = ids);
                         }
                       });
                     },
                     child: CircleAvatar(
-                      radius: 24.0,
+                      radius: 24.r, // CONVERTED
                       backgroundColor: Colors.grey,
                       backgroundImage: profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
                       child: profilePicUrl == null
-                          ? Icon(Icons.person, color: theme.colorScheme.onPrimary)
+                          ? Icon(Icons.person, color: theme.colorScheme.onPrimary, size: 28.w) // CONVERTED
                           : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w), // CONVERTED
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -182,11 +211,13 @@ class HomePage extends HookWidget {
                       Text("Welcome,",
                           style: theme.textTheme.titleLarge?.copyWith(
                               color: Colors.white,
-                              fontWeight: FontWeight.w400)),
+                              fontWeight: FontWeight.w400,
+                              fontSize: 16.sp)), // CONVERTED
                       Text(displayName,
                           style: theme.textTheme.titleMedium?.copyWith(
                               color: Colors.white,
-                              fontWeight: FontWeight.w400)),
+                              fontWeight: FontWeight.w400,
+                              fontSize: 18.sp)), // CONVERTED
                     ],
                   ),
                   const Spacer(),
@@ -197,7 +228,7 @@ class HomePage extends HookWidget {
                           MaterialPageRoute(builder: (context) => const NotificationPage()),
                         );
                       },
-                      child: Icon(Icons.notifications, color: theme.colorScheme.onPrimary)),
+                      child: Icon(Icons.notifications, color: theme.colorScheme.onPrimary, size: 28.w)), // CONVERTED
                 ],
               );
             },
@@ -208,7 +239,7 @@ class HomePage extends HookWidget {
 
     return Scaffold(
         appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(100),
+            preferredSize: Size.fromHeight(80.h), // CONVERTED
             child: buildAppBar()),
         body: LoadingOverlay(
           isLoading: isLoading.value,
@@ -217,61 +248,51 @@ class HomePage extends HookWidget {
               SingleChildScrollView(
                 child: Column(
                   children: [
-                    const SizedBox(height: 5),
-                    const Text(
+                    SizedBox(height: 5.h), // CONVERTED
+                    Text(
                       "Schedule's Days",
-                      style: TextStyle(fontSize: 20),
+                      style: TextStyle(fontSize: 20.sp), // CONVERTED
                     ),
-                    const SizedBox(height: 5),
+                    SizedBox(height: 5.h), // CONVERTED
                     Weekdays(selectedDay: selectedDay.value),
-                    const SizedBox(height: 5),
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Row(
+                    SizedBox(height: 5.h), // CONVERTED
+                    Padding(
+                      padding: EdgeInsets.all(8.w), // CONVERTED
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           RedText("Cardio"),
-                          TextButton(
-                              onPressed: null,
-                              child: Text(
-                                "see all",
-                                style: TextStyle(fontSize: 16, color: Colors.black),
-                              ))
+                          // TextButton removed as per original file structure, only RedText remains
                         ],
                       ),
                     ),
-                    SizedBox(
-                      height: 250,
+                    SizedBox( 
+                      height: 250.h, // CONVERTED
                       child: buildWorkoutList("cardio"),
                     ),
-                    const SizedBox(height: 5),
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Row(
+                    SizedBox(height: 5.h), // CONVERTED
+                    Padding(
+                      padding: EdgeInsets.all(8.w), // CONVERTED
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           RedText("Exercise"),
-                          TextButton(
-                              onPressed: null,
-                              child: Text(
-                                "see all",
-                                style: TextStyle(fontSize: 16, color: Colors.black),
-                              ))
+                          // TextButton removed as per original file structure, only RedText remains
                         ],
                       ),
                     ),
                     SizedBox(
-                      height: 250,
+                      height: 250.h, // CONVERTED
                       child: buildWorkoutList("exercise"),
                     ),
                   ],
                 ),
               ),
-              if (error.value != null)
+              if (error.value != null && !error.value!.contains('Data loading error'))
                 Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 16.h,
+                  left: 16.w,
+                  right: 16.w,
                   child: ErrorMessage(
                     message: error.value!,
                     onRetry: () {

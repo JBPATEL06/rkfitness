@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:rkfitness/Pages/add_to_schedule_page.dart';
 import 'package:rkfitness/models/scheduled_workout_model.dart';
@@ -68,6 +69,7 @@ class _SchedualPageState extends State<SchedualPage> {
                   decoration: const InputDecoration(labelText: 'Sets'),
                   keyboardType: TextInputType.number,
                 ),
+                SizedBox(height: 10.h),
                 TextField(
                   controller: repsController,
                   decoration: const InputDecoration(labelText: 'Reps'),
@@ -125,10 +127,10 @@ class _SchedualPageState extends State<SchedualPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+            padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
             child: SegmentedButton<String>(
               segments: daysOfWeek.map((day) {
-                return ButtonSegment<String>(value: day, label: Text(day));
+                return ButtonSegment<String>(value: day, label: Text(day, style: TextStyle(fontSize: 14.sp)));
               }).toList(),
               showSelectedIcon: false,
               selected: {_selectedDay},
@@ -178,9 +180,7 @@ class _SchedualPageState extends State<SchedualPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddWorkoutPage,
-        child: const Icon(Icons.add                                                                                                                                                                                                                                                                               
-        ),
-
+        child: Icon(Icons.add, size: 28.w),
       ),
     );
   }
@@ -194,9 +194,10 @@ class _SchedualPageState extends State<SchedualPage> {
     required ScheduleWorkoutModel schedule,
   }) {
     final theme = Theme.of(context);
-    final gifUrl = Supabase.instance.client.storage
-        .from('image_and_gifs')
-        .getPublicUrl(workout.gifPath ?? '');
+    final gifPath = workout.gifPath;
+    final gifUrl = gifPath != null && gifPath.isNotEmpty
+        ? Supabase.instance.client.storage.from('image_and_gifs').getPublicUrl(gifPath)
+        : 'https://via.placeholder.com/80';
 
     String subtitleText;
     if (workout.workoutType.toLowerCase() == 'exercise') {
@@ -215,37 +216,37 @@ class _SchedualPageState extends State<SchedualPage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Row(
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 80.w,
+            height: 80.w,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
               image: DecorationImage(image: NetworkImage(gifUrl), fit: BoxFit.cover),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   workout.workoutName,
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16.sp),
                 ),
-                const SizedBox(height: 4),
-                Text(subtitleText, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
+                SizedBox(height: 4.h),
+                Text(subtitleText, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600], fontSize: 14.sp)),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.edit, color: Colors.grey),
+            icon: Icon(Icons.edit, color: Colors.grey, size: 24.w),
             onPressed: () => _showEditDialog(schedule, workout),
           ),
           IconButton(
-            icon: Icon(Icons.delete, color: theme.colorScheme.primary),
+            icon: Icon(Icons.delete, color: theme.colorScheme.primary, size: 24.w),
             onPressed: () => _onDeleteExercise(schedule.id),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:rkfitness/models/notification_model.dart';
 import 'package:rkfitness/supabaseMaster/notification_services.dart';
 import 'package:uuid/uuid.dart';
@@ -132,7 +133,7 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
                   controller: titleController,
                   decoration: const InputDecoration(labelText: 'Title'),
                 ),
-                const SizedBox(height: 15),
+                SizedBox(height: 15.h),
                 TextField(
                   controller: descriptionController,
                   decoration: const InputDecoration(labelText: 'Description'),
@@ -204,7 +205,7 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.w),
             child: Text(
               'Sent Notifications',
               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -232,18 +233,18 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
                   }
                   final notifications = snapshot.data!;
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
                     itemCount: notifications.length,
                     itemBuilder: (context, index) {
                       final item = notifications[index];
                       return Card(
                         elevation: 4, // Increased elevation for better design
-                        margin: const EdgeInsets.only(bottom: 16.0),
+                        margin: EdgeInsets.only(bottom: 16.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10.r),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                           child: Row(
                             children: [
                               Expanded(
@@ -257,7 +258,7 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4.h),
                                     Text(
                                       item.description ?? 'No Description',
                                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -269,11 +270,11 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
                               ),
                               if (item.id != null) ...[
                                 IconButton(
-                                  icon: Icon(Icons.edit, color: theme.colorScheme.primary),
+                                  icon: Icon(Icons.edit, color: theme.colorScheme.primary, size: 24.w),
                                   onPressed: () => _showEditNotificationDialog(item),
                                 ),
                                 IconButton(
-                                  icon: Icon(Icons.delete, color: theme.colorScheme.error),
+                                  icon: Icon(Icons.delete, color: theme.colorScheme.error, size: 24.w),
                                   onPressed: () => _deleteNotification(item.id!, item.title ?? 'this notification'),
                                 ),
                               ]

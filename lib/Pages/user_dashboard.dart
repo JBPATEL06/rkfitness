@@ -3,7 +3,9 @@ import 'package:rkfitness/Pages/bmiPage.dart';
 import 'package:rkfitness/Pages/homePage.dart';
 import 'package:rkfitness/Pages/schedualPage.dart';
 import 'package:rkfitness/Pages/workoutPage.dart';
-import 'package:rkfitness/utils/responsive.dart';
+// REMOVED: import 'package:rkfitness/utils/responsive.dart';
+// ADDED import for screenutil extensions (.w, .h, .sp, .r)
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserDashBoard extends StatefulWidget {
@@ -39,19 +41,23 @@ class _UserDashBoard extends State<UserDashBoard> {
         },
         items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: Responsive.getProportionateScreenWidth(context, 24)),
+            // CONVERTED icon size to responsive width
+            icon: Icon(Icons.home, size: 24.w),
             label: "Home",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center_sharp, size: Responsive.getProportionateScreenWidth(context, 24)),
+            // CONVERTED icon size to responsive width
+            icon: Icon(Icons.fitness_center_sharp, size: 24.w),
             label: "Workout",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_sharp, size: Responsive.getProportionateScreenWidth(context, 24)),
+            // CONVERTED icon size to responsive width
+            icon: Icon(Icons.calendar_month_sharp, size: 24.w),
             label: "Schedual",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calculate_sharp, size: Responsive.getProportionateScreenWidth(context, 24)),
+            // CONVERTED icon size to responsive width
+            icon: Icon(Icons.calculate_sharp, size: 24.w),
             label: "Bmi",
           ),
         ],

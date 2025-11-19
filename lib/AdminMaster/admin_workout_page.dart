@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:rkfitness/widgets/custom_widgets.dart'; // Assuming this imports CustomeWidAndFun
 import 'package:rkfitness/models/workout_table_model.dart';
-import 'package:rkfitness/utils/responsive.dart';
+// REMOVED: import 'package:rkfitness/utils/responsive.dart';
+// ADDED import for screenutil extensions (.w, .h, .sp, .r)
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_add_workout.dart';
 
@@ -47,16 +49,18 @@ class _AdminWorkoutPageState extends State<AdminWorkoutPage> {
         final workouts = snapshot.data!;
 
         return GridView.builder(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8.w), // CONVERTED
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            mainAxisExtent: Responsive.responsiveHeight(context, 35),
+            crossAxisSpacing: 16.w, // CONVERTED
+            mainAxisSpacing: 16.h, // CONVERTED
+            // Set a fixed height relative to the design height (e.g., 35% of 690)
+            mainAxisExtent: 220.h, 
           ),
           itemCount: workouts.length,
           itemBuilder: (context, index) {
             final workoutData = workouts[index];
+            // The widget here uses internal responsiveness now
             return CustomeWidAndFun().workout(context, workoutData);
           },
         );
@@ -74,11 +78,11 @@ class _AdminWorkoutPageState extends State<AdminWorkoutPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h), // CONVERTED
             child: Container(
-              height: 50,
+              height: 50.h, // CONVERTED
               decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r), // CONVERTED
                   color: theme.colorScheme.primary),
               child: Row(
                 children: [
@@ -120,7 +124,7 @@ class _AdminWorkoutPageState extends State<AdminWorkoutPage> {
         child: Container(
           decoration: BoxDecoration(
             color: isSelected ? theme.colorScheme.secondary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r), // CONVERTED
           ),
           child: Center(
             child: Text(

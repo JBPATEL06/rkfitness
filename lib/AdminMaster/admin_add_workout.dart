@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rkfitness/supabaseMaster/workout_services.dart';
 import 'package:uuid/uuid.dart';
@@ -115,7 +116,7 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
         title: const Text('Add Workout'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -125,58 +126,60 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
                 GestureDetector(
                   onTap: _pickImage,
                   child: CircleAvatar(
-                    radius: 50,
+                    radius: 50.r,
                     backgroundColor: theme.colorScheme.onSurface.withAlpha(26),
                     backgroundImage:
                     _pickedImage != null ? FileImage(_pickedImage!) : null,
                     child: _pickedImage == null
                         ? Icon(Icons.person,
-                        size: 80, color: theme.colorScheme.onPrimary)
+                        size: 80.w,
+                        color: theme.colorScheme.onPrimary)
                         : null,
                   ),
                 ),
                 Positioned(
                   bottom: 0,
-                  right: 140,
+                  right: 140.w,
                   child: CircleAvatar(
-                    radius: 15,
+                    radius: 15.r,
                     backgroundColor: theme.colorScheme.primary,
                     child: IconButton(
                       icon: Icon(Icons.edit,
-                          size: 15, color: theme.colorScheme.onPrimary),
+                          size: 15.w,
+                          color: theme.colorScheme.onPrimary),
                       onPressed: _pickImage,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30.h),
             _buildTextField(controller: _nameController, labelText: 'Name'),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(controller: _typeController, labelText: 'Type'),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(
                 controller: _durationController,
                 labelText: 'Duration'),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(
                 controller: _categoryController, labelText: 'Category'),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(
                 controller: _repsController,
                 labelText: 'Reps',
                 keyboardType: TextInputType.number),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(
                 controller: _setsController,
                 labelText: 'Sets',
                 keyboardType: TextInputType.number),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(
                 controller: _descriptionController,
                 labelText: 'Description',
                 maxLines: 5),
-            const SizedBox(height: 40),
+            SizedBox(height: 40.h),
             ElevatedButton(
               onPressed: _addWorkout,
               child: const Text('Add'),

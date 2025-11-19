@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -87,7 +88,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -95,12 +96,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               controller: _newPasswordController,
               labelText: 'New-Password',
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildPasswordField(
               controller: _confirmPasswordController,
               labelText: 'Confirm-Password',
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40.h),
             ElevatedButton(
               onPressed: _changePassword,
               child: const Text('Change Password'),
@@ -122,7 +123,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         labelText: labelText,
         floatingLabelBehavior: FloatingLabelBehavior.always,
         contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       ),
     );
   }

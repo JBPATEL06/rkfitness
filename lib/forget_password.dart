@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:provider/provider.dart';
 import 'package:rkfitness/providers/auth_provider.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:rkfitness/widgets/connection_status.dart';
 import 'package:rkfitness/widgets/error_message.dart';
-import 'package:rkfitness/utils/responsive.dart';
+// REMOVED: import 'package:rkfitness/utils/responsive.dart';
 
 class Forgetpassword extends StatefulWidget {
   const Forgetpassword({super.key});
@@ -71,14 +72,14 @@ class _ForgetpasswordState extends State<Forgetpassword> {
                 'Forget Password',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: Responsive.getProportionateScreenWidth(context, 20),
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               iconTheme: const IconThemeData(color: Colors.white),
             ),
             body: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
               color: const Color(0xFF1A1A1A),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -87,85 +88,72 @@ class _ForgetpasswordState extends State<Forgetpassword> {
                     'Reset Password',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: Responsive.getProportionateScreenWidth(context, 24),
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                  SizedBox(height: 20.h),
                   TextField(
                     controller: _emailController,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: Responsive.getProportionateScreenWidth(context, 16),
+                      fontSize: 16.sp,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Enter your email',
                       hintStyle: TextStyle(
                         color: Colors.grey,
-                        fontSize: Responsive.getProportionateScreenWidth(context, 14),
+                        fontSize: 14.sp,
                       ),
                       prefixIcon: const Icon(Icons.email, color: Colors.white),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: theme.colorScheme.surface),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: theme.colorScheme.primary),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: theme.colorScheme.error),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: theme.colorScheme.error),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
-                  SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                  SizedBox(height: 20.h),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         padding: EdgeInsets.symmetric(
-                          horizontal: Responsive.getProportionateScreenWidth(context, 50),
-                          vertical: Responsive.getProportionateScreenHeight(context, 15),
+                          horizontal: 50.w,
+                          vertical: 15.h,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                       ),
                       onPressed: () => _resetPassword(context),
                       child: Text(
                         'Reset Password',
                         style: TextStyle(
-                          fontSize: Responsive.getProportionateScreenWidth(context, 18),
+                          fontSize: 18.sp,
                           color: theme.colorScheme.onPrimary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8.0),
-                  TextField(
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      fillColor: Colors.grey.shade100,
-                      filled: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide.none,
-                      ),
-                      hintText: 'Enter your email address',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                    ),
-                  ),
-                  const SizedBox(height: 40.0),
+                  SizedBox(height: 8.h),
+                  // NOTE: There were two identical blocks for email and button below. I've simplified and made the second button responsive too.
+                  SizedBox(height: 40.h),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 50.h,
                     child: ElevatedButton(
                       onPressed: () {
                         debugPrint('Submit button pressed!');
@@ -177,17 +165,15 @@ class _ForgetpasswordState extends State<Forgetpassword> {
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                         elevation: 5,
-                      ),
-                      child: const Text(
-                        'Submit',
-                        style: TextStyle(
-                          fontSize: 18,
+                        textStyle: TextStyle(
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      child: const Text('Submit'),
                     ),
                   ),
                 ],
@@ -196,9 +182,9 @@ class _ForgetpasswordState extends State<Forgetpassword> {
           ),
           if (authProvider.error != null)
             Positioned(
-              bottom: MediaQuery.of(context).padding.bottom + 16,
-              left: 16,
-              right: 16,
+              bottom: MediaQuery.of(context).padding.bottom + 16.h,
+              left: 16.w,
+              right: 16.w,
               child: ErrorMessage(
                 message: authProvider.error!,
                 compact: true,

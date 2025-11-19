@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:provider/provider.dart';
 import 'package:rkfitness/providers/workout_provider.dart';
 import 'package:rkfitness/widgets/workout_grid_item.dart';
@@ -36,13 +37,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
         ),
         body: Column(
         children: [
-          ConnectionStatus(),
+          const ConnectionStatus(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
             child: Container(
-              height: 50,
+              height: 50.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
                 color: theme.colorScheme.primary,
               ),
               child: Row(
@@ -66,16 +67,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
                 final workouts = provider.workouts[_selectedTab.toLowerCase()] ?? [];
 
                 if (workouts.isEmpty && !provider.isLoading) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'No workouts found in this category.',
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 16.sp),
                     ),
                   );
                 }
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
+                    // Responsive column count based on screen width
                     int crossAxisCount;
                     if (constraints.maxWidth > 1200) {
                       crossAxisCount = 4;
@@ -88,10 +90,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       isLoading: provider.isLoading,
                       message: 'Loading workouts...',
                       child: GridView.builder(
+                        padding: EdgeInsets.all(16.w),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16.w,
+                          mainAxisSpacing: 16.h,
+                          // AspectRatio of 0.6 ensures the card height scales proportionally to the width.
                           childAspectRatio: 0.6,
                         ),
                         itemCount: workouts.length,
@@ -126,7 +130,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         child: Container(
           decoration: BoxDecoration(
             color: isSelected ? theme.colorScheme.secondary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
           child: Center(
             child: Text(
@@ -134,6 +138,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               style: theme.textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 16.sp,
               ),
             ),
           ),

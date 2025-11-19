@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:rkfitness/AdminMaster/admin_update_profile.dart';
 import 'package:rkfitness/AdminMaster/admin_Dashboard.dart';
 import 'package:rkfitness/Pages/changePassword.dart';
@@ -100,21 +101,22 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 Container(
                   color: theme.colorScheme.primary,
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  padding: EdgeInsets.symmetric(vertical: 40.h),
                   child: Column(
                     children: [
                       CircleAvatar(
-                        radius: 50,
+                        radius: 50.r,
                         backgroundColor: theme.colorScheme.surface,
                         backgroundImage: admin?.profilePicture != null
                             ? NetworkImage(admin!.profilePicture!)
                             : null,
                         child: admin?.profilePicture == null
-                            ? const Icon(Icons.person,
-                            size: 80, color: Colors.grey)
+                            ? Icon(Icons.person,
+                            size: 80.w,
+                            color: Colors.grey)
                             : null,
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10.h),
                       Text(
                         admin?.name ?? 'Admin',
                         style: theme.textTheme.titleLarge?.copyWith(
@@ -122,7 +124,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 5),
+                      SizedBox(height: 5.h),
                       Text(
                         admin?.gmail ?? 'admin@example.com',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -135,12 +137,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
                 Container(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                   margin:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
                   decoration: BoxDecoration(
                       border: Border.all(color: theme.colorScheme.primary, width: 2.0),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                       color: theme.colorScheme.surface),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -152,7 +154,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20.h),
                 _buildActionButton(
                   context,
                   'Update Profile',
@@ -175,7 +177,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                     );
                   },
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: 40.h),
 
                 _buildActionButton(
                   context,
@@ -232,7 +234,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       }) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
       child: ElevatedButton(
         onPressed: onTap,
         style: isPrimary
@@ -240,9 +242,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             : ElevatedButton.styleFrom(
           backgroundColor: theme.colorScheme.surface,
           foregroundColor: theme.colorScheme.onSurface,
-          padding: const EdgeInsets.symmetric(vertical: 15),
+          padding: EdgeInsets.symmetric(vertical: 15.h),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(8.r),
             side: BorderSide(color: Colors.grey, width: 2),
           ),
           textStyle: theme.textTheme.titleMedium,
@@ -251,15 +253,15 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0),
+              padding: EdgeInsets.symmetric(horizontal: 14.w),
               child: Text(
                 label,
                 style: TextStyle(color: isPrimary ? Colors.white : theme.colorScheme.onSurface),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0),
-              child: Icon(Icons.arrow_forward_ios, color: isPrimary ? Colors.white : theme.colorScheme.primary),
+              padding: EdgeInsets.symmetric(horizontal: 14.w),
+              child: Icon(Icons.arrow_forward_ios, color: isPrimary ? Colors.white : theme.colorScheme.primary, size: 18.w),
             ),
           ],
         ),

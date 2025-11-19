@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:rkfitness/models/scheduled_workout_model.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:rkfitness/supabaseMaster/schedual_services.dart';
@@ -120,11 +121,11 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.w),
                   child: Container(
-                    height: 50,
+                    height: 50.h,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10.r),
                       color: theme.colorScheme.primary,
                     ),
                     child: Row(
@@ -137,15 +138,15 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
                 ),
                 if (_selectedWorkoutType == 'Exercise') ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
                     child: Text('Filter',
                         style: theme.textTheme.titleMedium),
                   ),
                   SizedBox(
-                    height: 60,
+                    height: 60.h,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
                       children: [
                         FilterChip(
                           label: const Text('All Body'),
@@ -161,11 +162,12 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
                           labelStyle: TextStyle(
                               color: _selectedCategory == null
                                   ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurface),
+                                  : theme.colorScheme.onSurface,
+                              fontSize: 14.sp),
                         ),
                         ..._categories.map((category) {
                           return Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
+                            padding: EdgeInsets.only(left: 8.w),
                             child: FilterChip(
                               label: Text(category),
                               selected: _selectedCategory == category,
@@ -180,7 +182,8 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
                               labelStyle: TextStyle(
                                   color: _selectedCategory == category
                                       ? theme.colorScheme.onPrimary
-                                      : theme.colorScheme.onSurface),
+                                      : theme.colorScheme.onSurface,
+                                  fontSize: 14.sp),
                             ),
                           );
                         }).toList(),
@@ -219,7 +222,7 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
         child: Container(
           decoration: BoxDecoration(
             color: isSelected ? theme.colorScheme.secondary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
           child: Center(
             child: Text(
@@ -241,7 +244,7 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
         ? Supabase.instance.client.storage
             .from('image_and_gifs')
             .getPublicUrl(workout.gifPath!)
-        : '';
+        : 'https://via.placeholder.com/80'; // Added placeholder for null
 
     String subtitleText;
     if (workout.workoutType.toLowerCase() == 'exercise') {
@@ -253,21 +256,21 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Row(
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 80.w,
+            height: 80.w,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
               image: DecorationImage(
                 image: NetworkImage(gifUrl),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,18 +279,19 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
                   workout.workoutName,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: 16.sp, // CONVERTED
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   subtitleText,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600], fontSize: 14.sp), // CONVERTED
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: Icon(Icons.add, color: theme.colorScheme.primary, size: 30),
+            icon: Icon(Icons.add, color: theme.colorScheme.primary, size: 30.w),
             onPressed: () => _addWorkoutToSchedule(workout),
           ),
         ],

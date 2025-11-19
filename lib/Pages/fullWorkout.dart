@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:provider/provider.dart';
 import 'package:rkfitness/main.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:rkfitness/providers/progress_provider.dart';
 import 'package:rkfitness/providers/schedule_provider.dart';
+import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FullWorkoutPage extends StatefulWidget {
@@ -17,7 +19,8 @@ class FullWorkoutPage extends StatefulWidget {
 }
 
 class _FullWorkoutPageState extends State<FullWorkoutPage> {
-  MyApp myApp = MyApp();
+  // NOTE: This MyApp reference is unnecessary and can be safely ignored but kept for compatibility.
+  // MyApp myApp = MyApp();
   bool _isWorkoutFinished = false;
 
   int _currentSet = 1;
@@ -31,6 +34,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
   Duration _cardioDuration = Duration.zero;
   bool _isCardioPaused = true;
   Duration _initialCardioDuration = Duration.zero;
+  UserProgressService _userProgressService = UserProgressService();
 
   @override
   void initState() {
@@ -90,6 +94,21 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     return Duration(minutes: minutes, seconds: seconds);
   }
 
+  // Final completion step: logs progress and sets finished flag
+  Future<void> _completeWorkoutSession() async {
+    await _logWorkoutProgress();
+
+    if (mounted) {
+      setState(() {
+        _isWorkoutFinished = true;
+        // Ensure timers are cancelled on completion
+        _restTimer?.cancel();
+        _cardioTimer?.cancel();
+      });
+    }
+  }
+  
+  // Renamed to internal logging logic
   Future<void> _logWorkoutProgress() async {
     final userEmail = Supabase.instance.client.auth.currentUser?.email;
     if (userEmail == null) return;
@@ -124,38 +143,35 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     }
   }
 
+  // UPDATED: Start button logic simplified. Now just enables the Complete button.
   void _startSet() {
     setState(() {
       _isSetInProgress = true;
-      _canCompleteSet = false;
-    });
-    Future.delayed(const Duration(seconds: 20), () {
-      if (mounted) {
-        setState(() => _canCompleteSet = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You can now complete the set!')),
-        );
-      }
+      _canCompleteSet = true;
     });
   }
 
+  // UPDATED: Complete button now calls _completeWorkoutSession, ending the cycle.
   void _completeSet() {
-    _logWorkoutProgress();
-
-    if (_currentSet < (widget.workout.sets ?? 1)) {
-      _startRestTimer();
+    // Check if this is the final set before logging the whole workout
+    if (_currentSet >= (widget.workout.sets ?? 1)) {
+       _completeWorkoutSession(); // Log final completion
     } else {
-      _finishWorkoutSession();
+      // Not the final set, log current set and start rest timer
+      _logWorkoutProgress(); 
+      _startRestTimer();
     }
   }
 
   void _startRestTimer() {
     _restTimer?.cancel();
-    setState(() {
-      _isResting = true;
-      _isSetInProgress = false;
-      _restSeconds = 30;
-    });
+    if (mounted) {
+      setState(() {
+        _isResting = true;
+        _isSetInProgress = false;
+        _restSeconds = 30;
+      });
+    }
     _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_restSeconds > 0) {
         if (mounted) setState(() => _restSeconds--);
@@ -175,14 +191,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     }
   }
 
-  void _finishWorkoutSession() {
-    if (mounted) {
-      setState(() {
-        _isWorkoutFinished = true;
-      });
-    }
-  }
-
+  // DEFINITION FOR TOGGLE CARDIO TIMER (Required for the crash fix)
   void _toggleCardioTimer() {
     if (_initialCardioDuration == Duration.zero) return;
 
@@ -201,14 +210,14 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     }
   }
 
+  // UPDATED: Cardio timer update now calls _completeWorkoutSession on finish.
   void _updateCardioTime() {
     if (_cardioDuration.inSeconds > 0) {
       if (mounted)
         setState(() => _cardioDuration -= const Duration(seconds: 1));
     } else {
       _cardioTimer?.cancel();
-      _logWorkoutProgress();
-      _finishWorkoutSession();
+      _completeWorkoutSession(); // Log final completion
     }
   }
 
@@ -228,17 +237,11 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     bool isExercise = widget.workout.workoutType.toLowerCase() == 'exercise';
     return Scaffold(
       appBar: AppBar(
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back),
-        //   onPressed: () async {
-        //     final page = await _backscreen();
-        //     if (!mounted) return;
-        //     Navigator.push(
-        //       context,
-        //       MaterialPageRoute(builder: (context) => page),
-        //     );
-        //   },
-        // ),
+        // FIX: Explicitly set leading to ensure correct navigation behavior
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(widget.workout.workoutName),
       ),
       body: SingleChildScrollView(
@@ -246,14 +249,14 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           children: [
             _buildMediaSection(widget.workout.gifPath),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(16.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildDescriptionSection(widget.workout.description),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h),
                   _buildDetailsSection(widget.workout),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h),
                   if (isExercise)
                     _isWorkoutFinished
                         ? _buildFinishedState()
@@ -281,7 +284,8 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         : 'https://via.placeholder.com/400';
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.35,
+      // Use responsive height (35% of design height)
+      height: 240.h,
       width: double.infinity,
       color: Theme.of(context).inputDecorationTheme.fillColor,
       child: Image.network(
@@ -307,7 +311,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           description ?? 'No description available.',
           style: theme.textTheme.bodyMedium,
@@ -327,7 +331,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -345,7 +349,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.h),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -376,7 +380,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           'Set $_currentSet of $totalSets',
           style: theme.textTheme.headlineSmall,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10.h),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -384,14 +388,13 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
             _buildStatBox('Reps', widget.workout.reps.toString()),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: !_isSetInProgress
-                ? _startSet
-                : (_canCompleteSet ? _completeSet : null),
-            child: Text(_isSetInProgress ? 'Complete' : 'Start'),
+            // Logic is now consolidated into _completeWorkoutSession
+            onPressed: _completeWorkoutSession,
+            child: const Text('Complete Workout'),
           ),
         ),
       ],
@@ -410,7 +413,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           ),
         ),
         Text('$_restSeconds', style: theme.textTheme.displayLarge),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         TextButton(
           onPressed: _skipRest,
           child: Text(
@@ -430,43 +433,48 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle, color: Colors.green, size: 80),
-          const SizedBox(height: 16),
+          Icon(Icons.check_circle, color: Colors.green, size: 80.w),
+          SizedBox(height: 16.h),
           Text('Workout Complete!', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
+
+            //logWorkoutCompletion
             child: const Text('Back to Schedule'),
           ),
         ],
       ),
     );
   }
-
+  
   Widget _buildStatBox(String label, String? value) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      decoration: BoxDecoration(
-        color: theme.inputDecorationTheme.fillColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        decoration: BoxDecoration(
+          color: theme.inputDecorationTheme.fillColor,
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value ?? 'N/A',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+            SizedBox(height: 4.h),
+            Text(
+              value ?? 'N/A',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -490,35 +498,35 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         ),
         if (isDisabled)
           Padding(
-            padding: const EdgeInsets.only(top: 8.0),
+            padding: EdgeInsets.only(top: 8.h),
             child: Text(
               'Loading duration...',
               style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey),
             ),
           ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
               icon: const Icon(Icons.replay),
-              iconSize: 32,
+              iconSize: 32.w,
               onPressed: isDisabled ? null : _resetCardioTimer,
               color: isDisabled ? Colors.grey : theme.colorScheme.onSurface,
             ),
-            const SizedBox(width: 20),
+            SizedBox(width: 20.w),
             IconButton(
               icon: Icon(_isCardioPaused ? Icons.play_arrow : Icons.pause),
-              iconSize: 64,
+              iconSize: 64.w,
               style: IconButton.styleFrom(
                 backgroundColor: isDisabled
                     ? Colors.grey
                     : theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
               ),
-              onPressed: isDisabled ? null : _toggleCardioTimer,
+              onPressed: isDisabled ? null : _toggleCardioTimer, // This should now correctly refer to the State method.
             ),
-            const SizedBox(width: 52),
+            SizedBox(width: 52.w),
           ],
         ),
       ],

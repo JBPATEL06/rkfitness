@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:intl/intl.dart';
 import 'package:rkfitness/models/user_progress_model.dart';
 import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
@@ -124,9 +125,9 @@ class _CalendarPageState extends State<CalendarPage> {
                   titleCentered: true,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.h),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
                 child: Text(
                   'Summary for ${DateFormat.yMMMd().format(_selectedDay)}',
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -157,12 +158,12 @@ class _CalendarPageState extends State<CalendarPage> {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildStatCard('Total Exercises Completed', exerciseCount, Icons.fitness_center),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             _buildStatCard('Total Cardio Sessions Completed', cardioCount, Icons.directions_run),
           ],
         ),
@@ -174,10 +175,10 @@ class _CalendarPageState extends State<CalendarPage> {
     final theme = Theme.of(context);
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
       child: ListTile(
-        leading: Icon(icon, color: theme.colorScheme.primary, size: 30),
-        title: Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),  
+        leading: Icon(icon, color: theme.colorScheme.primary, size: 30.w),
+        title: Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16.sp)),  
         trailing: Text(
           count.toString(),
           style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),

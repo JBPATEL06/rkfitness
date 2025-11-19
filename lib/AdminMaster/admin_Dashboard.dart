@@ -3,7 +3,9 @@ import 'package:rkfitness/AdminMaster/admin_workout_page.dart';
 import 'package:rkfitness/AdminMaster/admin_home_page.dart';
 import 'package:rkfitness/AdminMaster/total_user.dart';
 import 'package:rkfitness/AdminMaster/admin_calendar.dart';
-import 'package:rkfitness/utils/responsive.dart';
+// REMOVED: import 'package:rkfitness/utils/responsive.dart';
+// ADDED import for screenutil extensions (.w, .h, .sp, .r)
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -38,19 +40,23 @@ class _AdminDashboard extends State<AdminDashboard> {
           },
             items: [
               BottomNavigationBarItem(
-                icon: Icon(Icons.home, size: Responsive.getProportionateScreenWidth(context, 24)),
+                // CONVERTED icon size to responsive width
+                icon: Icon(Icons.home, size: 24.w), 
                 label: "Home",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.fitness_center_sharp, size: Responsive.getProportionateScreenWidth(context, 24)),
+                 // CONVERTED icon size to responsive width
+                icon: Icon(Icons.fitness_center_sharp, size: 24.w),
                 label: "Workout",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_month_sharp, size: Responsive.getProportionateScreenWidth(context, 24)),
+                 // CONVERTED icon size to responsive width
+                icon: Icon(Icons.calendar_month_sharp, size: 24.w),
                 label: "Calender",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person, size: Responsive.getProportionateScreenWidth(context, 24)),
+                 // CONVERTED icon size to responsive width
+                icon: Icon(Icons.person, size: 24.w),
                 label: "Users",
               ),
       ],

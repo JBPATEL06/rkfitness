@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
@@ -95,9 +96,9 @@ class _CalendarPageState extends State<CalendarPage> {
                 _buildStatRow('Cardio Sessions:', totalCardio.toString()),
 
                 if (totalExercises == 0 && totalCardio == 0)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10.0),
-                    child: Text('No workouts logged on this day.'),
+                  Padding(
+                    padding: EdgeInsets.only(top: 10.h),
+                    child: const Text('No workouts logged on this day.'),
                   ),
               ],
             ),
@@ -105,7 +106,7 @@ class _CalendarPageState extends State<CalendarPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Close', style: TextStyle(color: theme.colorScheme.primary)),
+              child: Text('Close', style: TextStyle(color: theme.colorScheme.onSurface)),
             ),
           ],
         );
@@ -154,9 +155,9 @@ class _CalendarPageState extends State<CalendarPage> {
               titleCentered: true,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Text(
               'Active on ${DateFormat.yMMMd().format(_selectedDay)}',
               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -174,12 +175,12 @@ class _CalendarPageState extends State<CalendarPage> {
                 final user = _activeUsersForSelectedDay[index];
                 return ListTile(
                   leading: CircleAvatar(
-                    radius: 25,
+                    radius: 25.r,
                     backgroundImage: user.profilePicture != null
                         ? NetworkImage(user.profilePicture!)
                         : null,
                     child: user.profilePicture == null
-                        ? const Icon(Icons.person)
+                        ? Icon(Icons.person, size: 30.w)
                         : null,
                   ),
                   title: Text(user.name ?? 'N/A'),
@@ -197,7 +198,7 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _buildStatRow(String label, String value) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

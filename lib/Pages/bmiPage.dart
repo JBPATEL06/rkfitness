@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -113,7 +114,7 @@ class _BmiPageState extends State<BmiPage> {
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -128,34 +129,34 @@ class _BmiPageState extends State<BmiPage> {
         ),
       )
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           children: [
             Row(
               children: [
                 _buildGenderCard(context, 'Male'),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 _buildGenderCard(context, 'Female'),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             Row(
               children: [
                 _buildInputCard(context, 'Age', _age, (value) {
                   setState(() => _age = value.toInt());
                 }, min: 1, max: 120),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 _buildInputCard(context, 'Weight(KG)', _weight, (value) {
                   setState(() => _weight = value);
                 }, min: 1.0, max: 200.0),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildHeightSlider(context),
-            const SizedBox(height: 30),
+            SizedBox(height: 30.h),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 50.h,
               child: ElevatedButton(
                 onPressed: _calculateAndUpdateBmi,
                 child: const Text('Calculate & Update'),
@@ -178,19 +179,19 @@ class _BmiPageState extends State<BmiPage> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20.w),
           decoration: BoxDecoration(
             color: isSelected ? theme.colorScheme.primary : theme.inputDecorationTheme.fillColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
           child: Column(
             children: [
               Icon(
                 gender == 'Male' ? Icons.male : Icons.female,
-                size: 50,
+                size: 50.w,
                 color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10.h),
               Text(
                 gender,
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -209,10 +210,10 @@ class _BmiPageState extends State<BmiPage> {
     final theme = Theme.of(context);
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           color: theme.inputDecorationTheme.fillColor,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(10.r),
         ),
         child: Column(
           children: [
@@ -231,7 +232,7 @@ class _BmiPageState extends State<BmiPage> {
                     Icons.remove,
                         () => onChanged(value - (value is double ? 1.0 : 1)),
                     (value == min)),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 _buildIconButton(
                     theme,
                     Icons.add,
@@ -250,7 +251,7 @@ class _BmiPageState extends State<BmiPage> {
       onPressed: disabled ? null : onPressed,
       mini: true,
       backgroundColor: disabled ? Colors.grey.shade400 : theme.colorScheme.primary,
-      child: Icon(icon, color: theme.colorScheme.onPrimary),
+      child: Icon(icon, color: theme.colorScheme.onPrimary, size: 20.w), // CONVERTED
     );
   }
 

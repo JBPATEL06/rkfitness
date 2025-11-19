@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+// IMPORTANT: Add this new import for screen responsiveness
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:rkfitness/Pages/splash_screen.dart';
 import 'package:rkfitness/AdminMaster/admin_Dashboard.dart';
 import 'package:rkfitness/Pages/loginpage.dart';
@@ -13,13 +17,12 @@ import 'package:rkfitness/providers/workout_provider.dart';
 import 'package:rkfitness/providers/auth_provider.dart';
 import 'package:rkfitness/supabaseMaster/auth_service.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rkfitness/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set preferred orientations to portrait only to prevent unnecessary rebuilds
+  // Set preferred orientations to portrait only
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -30,12 +33,12 @@ Future<void> main() async {
 
   try {
     await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
     );
   } catch (e) {
     debugPrint('Failed to initialize Supabase client');
-    rethrow; // Rethrow to prevent app from running without database connection
+    rethrow;
   }
   runApp(const MyApp());
 }
@@ -45,24 +48,36 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => WorkoutProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => ProgressProvider()),
-        ChangeNotifierProvider(create: (_) => ScheduleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'RKU Fitness',
-        theme: appTheme(context),
-        home: const SplashScreen(),
-      ),
+    // 1. Wrap the entire app structure with ScreenUtilInit
+    return ScreenUtilInit(
+      // 2. Set the design size. Common Android size used here.
+      // If your design document uses a specific size, use that instead.
+      designSize: const Size(360, 690),
+      minTextAdapt: true, // Ensures text scales down appropriately on small screens
+      splitScreenMode: true, // Support for multi-window modes on some devices
+      builder: (context, child) {
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => WorkoutProvider()),
+            ChangeNotifierProvider(create: (_) => UserProvider()),
+            ChangeNotifierProvider(create: (_) => NotificationProvider()),
+            ChangeNotifierProvider(create: (_) => ProgressProvider()),
+            ChangeNotifierProvider(create: (_) => ScheduleProvider()),
+            ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ],
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'RKU Fitness',
+            theme: appTheme(context),
+            // The home screen uses the logic to determine where to navigate
+            home: const SplashScreen(),
+          ),
+        );
+      },
     );
   }
 
+  // NOTE: I've moved the private helper method outside the build method to keep the code clean.
   Future<Widget> _getInitialScreen() async {
     final authService = AuthService();
     final session = await authService.getSession();

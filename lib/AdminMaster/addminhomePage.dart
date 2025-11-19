@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:rkfitness/AdminMaster/AdminProfile.dart';
-import 'package:rkfitness/AdminMaster/adminNotification.dart';
+import 'package:rkfitness/AdminMaster/admin_profile.dart';
+import 'package:rkfitness/AdminMaster/admin_notification.dart';
+import 'package:rkfitness/Pages/workoutPage.dart';
 import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:rkfitness/supabaseMaster/workout_services.dart';
-import 'package:rkfitness/customeWidAndFun.dart';
+import 'package:rkfitness/widgets/custom_widgets.dart';
+import 'package:rkfitness/utils/responsive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminHome extends StatefulWidget {
@@ -34,12 +36,11 @@ class _AdminHomeState extends State<AdminHome> {
       return Future.value({});
     }
 
-    // Fetch data in parallel
     final adminFuture = _userService.getUser(adminEmail);
     final totalUsersFuture = _userService.getAllUsers();
     final totalCardioFuture = _workoutService.getWorkoutCountByType('cardio');
     final totalExerciseFuture =
-    _workoutService.getWorkoutCountByType('exercise');
+        _workoutService.getWorkoutCountByType('exercise');
     final cardioWorkoutsFuture = _fetchRecentWorkouts('cardio');
     final exerciseWorkoutsFuture = _fetchRecentWorkouts('exercise');
 
@@ -68,7 +69,7 @@ class _AdminHomeState extends State<AdminHome> {
           .from('Workout Table')
           .select()
           .eq('Workout type', type)
-          .limit(5); // Fetching latest 5 workouts
+          .limit(5);
       return (response as List)
           .map((w) => WorkoutTableModel.fromJson(w))
           .toList();
@@ -80,6 +81,9 @@ class _AdminHomeState extends State<AdminHome> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final double scale = Responsive.getProportionateScreenWidth(context, 1);
+    
     return FutureBuilder<Map<String, dynamic>>(
       future: _adminDataFuture,
       builder: (context, snapshot) {
@@ -96,16 +100,17 @@ class _AdminHomeState extends State<AdminHome> {
         final int totalCardio = data['totalCardio'];
         final int totalExercise = data['totalExercise'];
         final List<WorkoutTableModel> cardioWorkouts =
-        data['cardioWorkouts'];
+            data['cardioWorkouts'];
         final List<WorkoutTableModel> exerciseWorkouts =
-        data['exerciseWorkouts'];
+            data['exerciseWorkouts'];
 
         return Scaffold(
           appBar: AppBar(
-            toolbarHeight: 80,
-            backgroundColor: Colors.red[700],
+            // Responsive toolbar height
+            toolbarHeight: Responsive.getProportionateScreenHeight(context, 80),
+            backgroundColor: theme.colorScheme.primary,
             title: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.symmetric(horizontal: Responsive.getProportionateScreenWidth(context, 16.0)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -117,31 +122,34 @@ class _AdminHomeState extends State<AdminHome> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) =>
-                                const AdminProfilePage()),
+                                    const AdminProfilePage()),
                           );
                         },
                         child: CircleAvatar(
+                          // Responsive avatar radius
+                          radius: Responsive.getProportionateScreenWidth(context, 24),
                           backgroundColor: Colors.white,
                           backgroundImage: admin?.profilePicture != null
                               ? NetworkImage(admin!.profilePicture!)
                               : null,
                           child: admin?.profilePicture == null
-                              ? const Icon(Icons.person, color: Colors.grey)
+                              ? Icon(Icons.person, color: Colors.grey.shade600, size: Responsive.getProportionateScreenWidth(context, 30))
                               : null,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: Responsive.getProportionateScreenWidth(context, 10)),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Welcome,',
-                              style: TextStyle(
-                                  color: Colors.white, fontSize: 14)),
+                          Text('Welcome,',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 14 * scale)), // Scaled
                           Text(admin?.name ?? 'Admin',
-                              style: const TextStyle(
+                              style: theme.textTheme.titleLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18)),
+                                  fontSize: 18 * scale)), // Scaled
                         ],
                       ),
                     ],
@@ -152,50 +160,45 @@ class _AdminHomeState extends State<AdminHome> {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                              const SendNotificationPage()),
+                                  const SendNotificationPage()),
                         );
                       },
-                      child: const Icon(Icons.notifications,
-                          color: Colors.white, size: 30)),
+                      child: Icon(Icons.notifications,
+                          color: Colors.white, size: 30 * scale)), // Scaled
                 ],
               ),
             ),
           ),
           body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stat Cards Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatCard(
-                          context, 'Total Users', totalUsers, Icons.people),
-                      _buildStatCard(context, 'Total Cardio', totalCardio,
-                          Icons.fitness_center),
-                      _buildStatCard(context, 'Total Exercise',
-                          totalExercise, Icons.sports_gymnastics),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // User Chart Section
-                  const Text(
-                    'User Stats',
-                    style:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildUserChart(),
-                  const SizedBox(height: 20),
-                  // Cardio and Exercise Sections
-                  _buildWorkoutSection(context, 'Cardio', cardioWorkouts),
-                  const SizedBox(height: 20),
-                  _buildWorkoutSection(
-                      context, 'Exercise', exerciseWorkouts),
-                ],
-              ),
+            // Responsive padding
+            padding: EdgeInsets.all(Responsive.getProportionateScreenWidth(context, 16.0)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatCard(
+                        context, 'Total Users', totalUsers, Icons.people),
+                    _buildStatCard(context, 'Total Cardio', totalCardio,
+                        Icons.fitness_center),
+                    _buildStatCard(context, 'Total Exercise',
+                        totalExercise, Icons.sports_gymnastics),
+                  ],
+                ),
+                SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                Text(
+                  'User Stats',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 20 * scale), // Scaled
+                ),
+                SizedBox(height: Responsive.getProportionateScreenHeight(context, 10)),
+                _buildUserChart(theme),
+                SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                _buildWorkoutSection(context, 'Cardio', cardioWorkouts),
+                SizedBox(height: Responsive.getProportionateScreenHeight(context, 20)),
+                _buildWorkoutSection(
+                    context, 'Exercise', exerciseWorkouts),
+              ],
             ),
           ),
         );
@@ -205,22 +208,25 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildStatCard(
       BuildContext context, String title, int value, IconData icon) {
+    final theme = Theme.of(context);
+    final double scale = Responsive.getProportionateScreenWidth(context, 1);
+    
     return Expanded(
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Responsive.getProportionateScreenWidth(context, 10))), // Scaled radius
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(Responsive.getProportionateScreenWidth(context, 16.0)), // Scaled padding
           child: Column(
             children: [
               Text('$value',
-                  style: const TextStyle(
-                      fontSize: 32,
+                  style: theme.textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.red)),
-              Icon(icon, color: Colors.red),
-              const SizedBox(height: 5),
-              Text(title, textAlign: TextAlign.center),
+                      color: theme.colorScheme.primary,
+                      fontSize: 32 * scale)), // Scaled font size
+              Icon(icon, color: theme.colorScheme.primary, size: 24 * scale), // Scaled icon size
+              SizedBox(height: 5 * scale), // Scaled height
+              Text(title, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14 * scale)), // Scaled font size
             ],
           ),
         ),
@@ -228,33 +234,34 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _buildUserChart() {
+  Widget _buildUserChart(ThemeData theme) {
+    final double scale = Responsive.getProportionateScreenWidth(context, 1);
     return AspectRatio(
       aspectRatio: 1.5,
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Responsive.getProportionateScreenWidth(context, 10))), // Scaled radius
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(Responsive.getProportionateScreenWidth(context, 16.0)), // Scaled padding
           child: Row(
             children: [
               Expanded(
                 child: PieChart(
                   PieChartData(
-                    sections: _buildChartSections(),
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 40,
+                    sections: _buildChartSections(theme),
+                    sectionsSpace: Responsive.getProportionateScreenWidth(context, 2), // Scaled space
+                    centerSpaceRadius: Responsive.getProportionateScreenWidth(context, 40), // Scaled radius
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: Responsive.getProportionateScreenWidth(context, 20)), // Scaled width
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildLegend('Good', Colors.orange),
                   _buildLegend('Average', Colors.purple),
-                  _buildLegend('Worst', Colors.red),
+                  _buildLegend('Worst', theme.colorScheme.primary),
                 ],
               ),
             ],
@@ -264,74 +271,101 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  List<PieChartSectionData> _buildChartSections() {
+  List<PieChartSectionData> _buildChartSections(ThemeData theme) {
+    final double scale = Responsive.getProportionateScreenWidth(context, 1);
+    // Use scale for radius and title size
+    final double radius = 60 * scale; 
+    final double titleSize = 16 * scale;
+    
     return [
       PieChartSectionData(
         color: Colors.orange,
         value: 50,
         title: '50.0%',
-        radius: 60,
-        titleStyle: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+        radius: radius,
+        titleStyle: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold, color: Colors.white, fontSize: titleSize),
       ),
       PieChartSectionData(
         color: Colors.purple,
         value: 26.7,
         title: '26.7%',
-        radius: 60,
-        titleStyle: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+        radius: radius,
+        titleStyle: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold, color: Colors.white, fontSize: titleSize),
       ),
       PieChartSectionData(
-        color: Colors.red,
+        color: theme.colorScheme.primary,
         value: 23.3,
         title: '23.3%',
-        radius: 60,
-        titleStyle: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+        radius: radius,
+        titleStyle: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold, color: Colors.white, fontSize: titleSize),
       ),
     ];
   }
 
   Widget _buildLegend(String title, Color color) {
-    return Row(
-      children: [
-        Container(width: 16, height: 16, color: color),
-        const SizedBox(width: 8),
-        Text(title),
-      ],
+    final theme = Theme.of(context);
+    final double scale = Responsive.getProportionateScreenWidth(context, 1);
+    
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.0 * scale), // Scaled padding
+      child: Row(
+        children: [
+          Container(width: 16 * scale, height: 16 * scale, color: color), // Scaled size
+          SizedBox(width: 8 * scale), // Scaled width
+          Text(title, style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14 * scale)), // Scaled font size
+        ],
+      ),
     );
   }
 
   Widget _buildWorkoutSection(BuildContext context, String title,
       List<WorkoutTableModel> workouts) {
+    final theme = Theme.of(context);
+    final double scale = Responsive.getProportionateScreenWidth(context, 1);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text.rich(mywidget.redText(title)),
+            Text.rich(mywidget.redText(title)), 
             TextButton(
-              onPressed: () {},
-              child: const Text('see all', style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                // Navigate to the main WorkoutPage which has the tabs
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WorkoutPage()
+                  ),
+                );
+              },
+              child: Text('see all', style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey, fontSize: 14 * scale)), // Scaled font size
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10 * scale), // Scaled height
         SizedBox(
-          height: mywidget.phoneHieght(context) * 0.35,
+          // Use proportional height for the list container
+          height: Responsive.responsiveHeight(context, 35),
           child: workouts.isEmpty
-              ? Center(child: Text('No $title workouts found.'))
-              : ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: workouts.length,
-            itemBuilder: (context, index) {
-              final workoutData = workouts[index];
-              // CORRECTED: Pass the entire workoutData object
-              return mywidget.workout(context, workoutData);
-            },
-          ),
+              ? Center(child: Text('No $title workouts found.', style: theme.textTheme.bodyLarge?.copyWith(fontSize: 16 * scale))) // Scaled font size
+              : SizedBox(
+                    // Inner SizedBox with correct proportional height
+                    height: Responsive.responsiveHeight(context, 30),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: workouts.length,
+                      itemBuilder: (context, index) {
+                        final workoutData = workouts[index];
+                        // The mywidget.workout already handles responsive sizing internally
+                        return mywidget.workout(context, workoutData); 
+                      },
+                    ),
+                  ),
         ),
       ],
     );

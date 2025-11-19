@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 
@@ -106,7 +107,7 @@ class _UsersPageState extends State<UsersPage> {
                   TextField(controller: ageController, decoration: const InputDecoration(labelText: 'Age'), keyboardType: TextInputType.number),
                   TextField(controller: weightController, decoration: const InputDecoration(labelText: 'Weight (kg)'), keyboardType: TextInputType.number),
                   TextField(controller: heightController, decoration: const InputDecoration(labelText: 'Height (cm)'), keyboardType: TextInputType.number),
-                  const SizedBox(height: 15),
+                  SizedBox(height: 15.h),
                   DropdownButtonFormField<String>(
                     value: selectedGender,
                     decoration: const InputDecoration(labelText: 'Gender'),
@@ -178,7 +179,7 @@ class _UsersPageState extends State<UsersPage> {
           final userList = snapshot.data!;
           return ListView.separated(
             itemCount: userList.length,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             separatorBuilder: (context, index) =>
             const Divider(color: Colors.grey),
             itemBuilder: (context, index) {
@@ -187,12 +188,12 @@ class _UsersPageState extends State<UsersPage> {
 
               return ListTile(
                 leading: CircleAvatar(
-                  radius: 25,
+                  radius: 25.r,
                   backgroundImage: user.profilePicture != null
                       ? NetworkImage(user.profilePicture!)
                       : null,
                   child: user.profilePicture == null
-                      ? const Icon(Icons.person, size: 25)
+                      ? Icon(Icons.person, size: 25.w)
                       : null,
                 ),
                 title: Text(
@@ -206,7 +207,7 @@ class _UsersPageState extends State<UsersPage> {
                   children: [
                     // Role Dropdown (Made compact)
                     Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
+                      padding: EdgeInsets.only(right: 8.w),
                       child: DropdownButton<String>(
                         value: currentUserRole,
                         items: <String>['user', 'admin'].map((String value) {
@@ -229,20 +230,20 @@ class _UsersPageState extends State<UsersPage> {
                     
                     // Edit Button (Constrained size)
                     IconButton(
-                      icon: Icon(Icons.edit, color: theme.colorScheme.primary, size: 20),
+                      icon: Icon(Icons.edit, color: theme.colorScheme.primary, size: 20.w),
                       onPressed: () => _showEditUserDialog(user),
                       tooltip: 'Edit User Details',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                      constraints: BoxConstraints.tightFor(width: 30.w, height: 30.h),
                     ),
 
                     // Delete Button (Constrained size)
                     IconButton(
-                      icon: Icon(Icons.delete, color: theme.colorScheme.error, size: 20),
+                      icon: Icon(Icons.delete, color: theme.colorScheme.error, size: 20.w),
                       onPressed: () => _deleteUser(user),
                       tooltip: 'Delete User',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                      constraints: BoxConstraints.tightFor(width: 30.w, height: 30.h),
                     ),
                   ],
                 ),

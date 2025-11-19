@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
@@ -121,20 +122,20 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Stack(
               children: [
                 CircleAvatar(
-                  radius: 50,
+                  radius: 50.r,
                   backgroundColor: theme.colorScheme.onSurface.withAlpha(26),
                   backgroundImage: _pickedImage != null
                       ? FileImage(_pickedImage!)
                       : (_currentProfilePicUrl != null ? NetworkImage(_currentProfilePicUrl!) : null) as ImageProvider?,
                   child: _pickedImage == null && _currentProfilePicUrl == null
-                      ? Icon(Icons.person, size: 50, color: theme.colorScheme.onSurface)
+                      ? Icon(Icons.person, size: 50.w, color: theme.colorScheme.onSurface)
                       : null,
                 ),
                 Positioned(
@@ -143,22 +144,22 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                   child: GestureDetector(
                     onTap: _pickImage,
                     child: CircleAvatar(
-                      radius: 15,
+                      radius: 15.r,
                       backgroundColor: theme.colorScheme.primary,
-                      child: Icon(Icons.edit, size: 15, color: theme.colorScheme.onPrimary),
+                      child: Icon(Icons.edit, size: 15.w, color: theme.colorScheme.onPrimary),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30.h),
             _buildTextField(controller: _nameController, labelText: 'Name'),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             _buildTextField(
                 controller: _emailController,
                 labelText: 'Email',
                 enabled: false),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             DropdownButtonFormField<String>(
               value: _selectedGender,
               decoration: const InputDecoration(
@@ -176,7 +177,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                 });
               },
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40.h),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

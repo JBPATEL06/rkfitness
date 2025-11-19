@@ -45,6 +45,30 @@ class UserProgressService {
       return null;
     }
   }
+  
+  // NEW FUNCTION: Retrieves all workout IDs completed today
+  Future<Set<String>> getCompletedWorkoutIdsForToday(String userEmail) async {
+    try {
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      
+      // We query the raw logs table 'user workout logs'
+      final response = await _supabaseClient
+          .from('user workout logs') 
+          .select('workout_id')
+          .eq('user_email', userEmail)
+          .eq('date', today);
+
+      if (response is List) {
+        return response
+            .map((item) => item['workout_id'] as String)
+            .toSet();
+      }
+      return {};
+    } catch (e, st) {
+      Logger.error('Error getting completed workout IDs for today', e, st);
+      return {};
+    }
+  }
 
   Future<List<UserModel>> getActiveUsersForDay(DateTime day) async {
     try {
@@ -82,6 +106,7 @@ class UserProgressService {
     }
   }
 
+  // UPDATED: Now uses a new log table 'user workout logs' for detailed logging
   Future<void> logWorkoutCompletion({
     required String userEmail,
     required WorkoutTableModel workout,
@@ -89,15 +114,23 @@ class UserProgressService {
     final today = DateTime.now();
     final formattedDate = DateFormat('yyyy-MM-dd').format(today);
     final dayOfWeek = DateFormat('EEE').format(today).toUpperCase();
-
     final isExercise = workout.workoutType.toLowerCase() == 'exercise';
 
     try {
+      // 1. Log the individual completion event (new detailed log table)
+      await _supabaseClient.from('user workout logs').insert({
+        'user_email': userEmail,
+        'workout_id': workout.workoutId,
+        'workout_type': workout.workoutType,
+        'date': formattedDate,
+      });
+
+      // 2. Update the aggregated 'user Progress' table (for admin visibility and history)
       final existingProgress = await _supabaseClient
           .from('user Progress')
           .select()
           .eq('User Email', userEmail)
-          .eq('time stamp', formattedDate)
+          .eq('day', dayOfWeek)
           .maybeSingle();
 
       if (existingProgress != null) {
