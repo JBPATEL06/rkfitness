@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:rkfitness/main.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
@@ -8,6 +8,7 @@ import 'package:rkfitness/providers/progress_provider.dart';
 import 'package:rkfitness/providers/schedule_provider.dart';
 import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rkfitness/providers/auth_provider.dart';
 
 class FullWorkoutPage extends StatefulWidget {
   final WorkoutTableModel workout;
@@ -47,7 +48,12 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     final userEmail = Supabase.instance.client.auth.currentUser?.email;
     Duration calculatedDuration = Duration.zero;
 
-    if (isCardio && userEmail != null) {
+    // Safety check: Determine user role to skip unnecessary schedule fetching
+    final authProvider = context.read<AuthProvider>();
+    final isAdmin = authProvider.currentUser?.userType == 'admin';
+
+    // Only run this complex schedule-fetching logic if the user is a standard user AND it's cardio
+    if (isCardio && userEmail != null && !isAdmin) { 
       final scheduleProvider = context.read<ScheduleProvider>();
       final schedule = await scheduleProvider.getCustomWorkoutDetailsForToday(
         userEmail,
@@ -61,10 +67,12 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         }
       }
       
+      // Fallback to default duration if custom duration isn't set or applicable
       if (calculatedDuration == Duration.zero) {
         calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00");
       }
     } else if (isCardio) {
+      // For Admin, just use the workout's default duration
       calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00");
     }
 
@@ -234,7 +242,22 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if the current user is an admin
+    final authProvider = context.watch<AuthProvider>();
+    final isAdmin = authProvider.currentUser?.userType == 'admin';
+    
     bool isExercise = widget.workout.workoutType.toLowerCase() == 'exercise';
+    
+    // FIX: Show loading indicator while AuthProvider state is resolving
+    if (authProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.workout.workoutName),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
         // FIX: Explicitly set leading to ensure correct navigation behavior
@@ -257,13 +280,22 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
                   SizedBox(height: 20.h),
                   _buildDetailsSection(widget.workout),
                   SizedBox(height: 20.h),
-                  if (isExercise)
+                  
+                  // Conditional rendering based on role
+                  if (isAdmin)
+                    const Center(
+                      child: Text(
+                        'Admin View: Progress tracking is disabled.',
+                        style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                      ),
+                    )
+                  else if (isExercise)
                     _isWorkoutFinished
                         ? _buildFinishedState()
                         : _isResting
                         ? _buildRestingState()
                         : _buildExerciseActiveState()
-                  else
+                  else // Cardio
                     _isWorkoutFinished
                         ? _buildFinishedState()
                         : _buildCardioActiveState(),

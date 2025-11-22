@@ -1,8 +1,9 @@
-import '../utils/logger.dart';
-// lib/supabaseMaster/workout_services.dart
+// File: lib/supabaseMaster/workout_services.dart
+
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/workout_table_model.dart';
+import '../utils/logger.dart';
 
 class WorkoutTableService {
   final SupabaseClient _supabaseClient = Supabase.instance.client;
@@ -36,20 +37,13 @@ class WorkoutTableService {
   Future<List<WorkoutTableModel>> getWorkoutsByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
 
-    // --- FINAL FIX: Simplified Cleanup (Remove all hyphens/non-hex chars) ---
-    // This aggressively strips all formatting and sends the raw 32-character hex string.
     final sanitizedIds = ids.map((id) {
       final cleanHex = id.replaceAll(RegExp(r'[^0-9a-fA-F]'), '').toLowerCase();
-
-      // If it's a 32-character hex string, we send the raw hex string.
-      // We rely on PostgreSQL's ability to parse this, which is the most robust way
-      // when hyphenation is causing errors.
       if (cleanHex.length == 32) {
         return cleanHex;
       }
       return id;
     }).toList();
-    // --- END FINAL FIX ---
 
     try {
       Logger.debug('FINAL Sanitized IDs sent to Workout Table (Raw Hex): $sanitizedIds');
@@ -70,7 +64,8 @@ class WorkoutTableService {
       return [];
     }
   }
-Future<void> createWorkoutWithGif({
+  
+  Future<void> createWorkoutWithGif({
     required WorkoutTableModel workout,
     required File gifFile,
     required String fileName,
@@ -87,9 +82,10 @@ Future<void> createWorkoutWithGif({
       await _supabaseClient.from('Workout Table').insert(workoutData);
     } catch (e, st) {
       Logger.error('Error creating workout with GIF', e, st);
-      rethrow; // <--- RETHROW ADDED HERE TO PROPAGATE THE ERROR
+      rethrow;
     }
   }
+
   Future<void> updateWorkout({
     required WorkoutTableModel workout,
     File? newGifFile,
@@ -118,12 +114,18 @@ Future<void> createWorkoutWithGif({
     }
   }
 
+  // FINAL FIX: Corrected the SELECT string to match the database column "Workout id"
   Future<int> getWorkoutCountByType(String workoutType) async {
     try {
+      final cleanWorkoutType = workoutType.trim(); 
+      
+      // FIX: Using '"Workout id"' (quoted column name) resolves PostgrestException.
       final response = await _supabaseClient
           .from('Workout Table')
-          .select('Workout id')
-          .eq('Workout type', workoutType.toLowerCase());
+          .select('"Workout id"')
+          .ilike('Workout type', cleanWorkoutType);
+      
+      Logger.debug('Count for $workoutType: ${(response as List).length}');
 
       return (response as List).length;
     } catch (e, st) {
