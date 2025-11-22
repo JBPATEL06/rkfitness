@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:rkfitness/Pages/profilepage.dart';
 import 'package:rkfitness/customWidgets/weekdays.dart';
 import 'package:rkfitness/widgets/custom_wid_and_fun.dart';
@@ -11,296 +10,324 @@ import 'package:rkfitness/widgets/error_message.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:rkfitness/supabaseMaster/user_progress_services.dart'; // ADDED
+import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
 
 import '../models/user_model.dart';
 import '../models/workout_table_model.dart';
 import 'Notification.dart';
 
-class HomePage extends HookWidget {
-  const HomePage({super.key});
+class RedText extends StatelessWidget {
+  final String text;
+  const RedText(this.text, {super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userService = useMemoized(() => UserService());
-    // ADDED: Progress Service dependency
-    final progressService = useMemoized(() => UserProgressService());
-    
-    final isLoading = useState(false);
-    final error = useState<String?>(null);
-    final selectedDay = useState<Set<Days>>({getCurrentDay()});
-    final hasConnection = useState(true);
-    final userFuture = useState<Future<UserModel?>?>(null);
-    // NEW STATE: Cache for today's completed workout IDs
-    final completedWorkouts = useState<Set<String>>({});
+    return Text.rich(CustomeWidAndFun().redText(text));
+  }
+}
 
-    // Fetch user details and completed workout IDs
-    useEffect(() {
-      Future<void> initData() async {
-        final connectivityResult = await Connectivity().checkConnectivity();
-        hasConnection.value = connectivityResult != ConnectivityResult.none;
-        
-        final userEmail = Supabase.instance.client.auth.currentUser?.email;
-        if (userEmail != null && hasConnection.value) {
-          try {
-            isLoading.value = true;
-            error.value = null;
-            userFuture.value = userService.getUser(userEmail);
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-            // NEW: Fetch completed workout IDs
-            completedWorkouts.value = await progressService.getCompletedWorkoutIdsForToday(userEmail);
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
 
-          } catch (e) {
-            error.value = e.toString();
-          } finally {
-            isLoading.value = false;
-          }
-        }
-      }
-      
-      initData();
-      return null;
-    }, []);
+class _HomePageState extends State<HomePage> {
+  final UserService _userService = UserService();
+  final UserProgressService _progressService = UserProgressService();
+  final CustomeWidAndFun _myWidgets = CustomeWidAndFun(); 
 
-    // Memoize the workout fetching function
-    final fetchTodaysWorkouts = useCallback((String? userEmail, String day) async {
-      if (!hasConnection.value) {
-        throw Exception('No internet connection');
-      }
-      
-      if (userEmail == null) {
-        throw Exception('Not logged in');
+  bool _isLoading = false;
+  String? _error;
+  late Set<Days> _selectedDay;
+  bool _hasConnection = true;
+  Future<UserModel?>? _userFuture;
+  Set<String> _completedWorkouts = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = {_myWidgets.getCurrentDay()};
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    _hasConnection = connectivityResult != ConnectivityResult.none;
+
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+
+    if (userEmail != null && _hasConnection) {
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+          _userFuture = _userService.getUser(userEmail);
+        });
       }
 
       try {
-        final response = await Supabase.instance.client
-            .from('schedual workout')
-            .select('*, "Workout Table"(*)')
-            .eq('user_id', userEmail)
-            .eq('day_of_week', day);
-
-        if (response is! List) {
-          return <WorkoutTableModel>[];
+        final completedIds = await _progressService.getCompletedWorkoutIdsForToday(userEmail);
+        
+        if (mounted) {
+          setState(() {
+            _completedWorkouts = completedIds;
+            _isLoading = false;
+          }); 
         }
-
-        // Defensive parsing logic
-        final List<WorkoutTableModel> scheduledWorkouts = (response as List<dynamic>)
-            .whereType<Map<String, dynamic>>()
-            .map((row) {
-                final nestedData = row['Workout Table'];
-                return nestedData is Map<String, dynamic> ? WorkoutTableModel.fromJson(nestedData) : null;
-            })
-            .where((workout) => workout != null)
-            .cast<WorkoutTableModel>()
-            .toList();
-            
-        // NEW FILTERING LOGIC: Remove workouts that are already in the completedWorkouts set
-        final filteredWorkouts = scheduledWorkouts.where((workout) {
-          // Check if the workout ID is NOT in the set of completed IDs
-          return !completedWorkouts.value.contains(workout.workoutId);
-        }).toList();
-
-
-        return filteredWorkouts;
       } catch (e) {
-        error.value = 'Data loading error: ${e.toString()}';
-        return <WorkoutTableModel>[];
+        if (mounted) {
+          setState(() {
+            _error = e.toString();
+            _isLoading = false;
+          });
+        }
       }
-    }, [hasConnection, completedWorkouts]); // Depend on completedWorkouts state
-
-    Widget buildWorkoutList(String workoutType) {
-      final userEmail = Supabase.instance.client.auth.currentUser?.email;
-      final day = stringgetCurrentDay();
-      final theme = Theme.of(context);
-      
-      final workoutsFuture = useMemoized(
-        () => fetchTodaysWorkouts(userEmail, day),
-        [userEmail, day, completedWorkouts.value] // Trigger refetch when completedWorkouts changes
-      );
-
-      return FutureBuilder<List<WorkoutTableModel>>(
-        future: workoutsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (!_hasConnection) {
+            _error = 'No internet connection available';
           }
+        });
+      }
+    }
+  }
 
-          final displayError = error.value;
-          if (displayError != null && displayError.isNotEmpty) {
-             return Center(child: Text(displayError, style: theme.textTheme.bodyLarge));
-          }
-
-          if (snapshot.hasError) {
-             return Center(child: Text('Snapshot Error: ${snapshot.error.toString()}', style: theme.textTheme.bodyLarge));
-          }
-
-          final filteredWorkouts = snapshot.data?.where((workout) {
-            return workout.workoutType.toLowerCase() == workoutType;
-          }).toList() ?? [];
-
-          if (filteredWorkouts.isEmpty) {
-            return Center(child: Text("No $workoutType workouts scheduled or remaining today", style: theme.textTheme.bodyLarge));
-          }
-
-          return ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: filteredWorkouts.length,
-            itemBuilder: (context, index) {
-              final workout = filteredWorkouts[index];
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                child: SizedBox( 
-                  width: 160.w,
-                  child: WorkoutGridItem(workout: workout),
-                ),
-              );
-            },
-          );
-        },
-      );
+  Future<List<WorkoutTableModel>> _fetchTodaysWorkouts(String? userEmail, String day) async {
+    if (!_hasConnection) {
+      throw Exception('No internet connection');
+    }
+    if (userEmail == null) {
+      throw Exception('Not logged in');
     }
 
-    Widget buildAppBar() {
-      final theme = Theme.of(context);
-      return SafeArea(
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          color: theme.colorScheme.primary,
-          child: FutureBuilder<UserModel?>(
-            future: userFuture.value,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: theme.colorScheme.onPrimary));
-              }
+    try {
+      final response = await Supabase.instance.client
+          .from('schedual workout')
+          .select('*, "Workout Table"(*)')
+          .eq('user_id', userEmail)
+          .eq('day_of_week', day);
 
-              final user = snapshot.data;
-              final displayName = user?.name ?? user?.gmail.split('@').first ?? 'Guest';
-              final profilePicUrl = user?.profilePicture;
+      if (response is! List) {
+        return <WorkoutTableModel>[];
+      }
 
-              return Row(
-                children: [
-                  GestureDetector(
+      final List<WorkoutTableModel> scheduledWorkouts = (response as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .map((row) {
+              final nestedData = row['Workout Table'];
+              return nestedData is Map<String, dynamic> ? WorkoutTableModel.fromJson(nestedData) : null;
+          })
+          .where((workout) => workout != null)
+          .cast<WorkoutTableModel>()
+          .toList();
+
+      final filteredWorkouts = scheduledWorkouts.where((workout) {
+        return !_completedWorkouts.contains(workout.workoutId);
+      }).toList();
+
+      return filteredWorkouts;
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          if (_error == null || !_error!.contains('Data loading error')) {
+             _error = 'Data loading error: ${e.toString()}';
+          }
+        });
+      }
+      return <WorkoutTableModel>[];
+    }
+  }
+  
+  Widget _buildWorkoutList(String workoutType) {
+    final userEmail = Supabase.instance.client.auth.currentUser?.email;
+    final day = _myWidgets.stringgetCurrentDay(); 
+    final theme = Theme.of(context);
+
+    final workoutsFuture = _fetchTodaysWorkouts(userEmail, day);
+
+    return FutureBuilder<List<WorkoutTableModel>>(
+      future: workoutsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final displayError = _error;
+        if (displayError != null && displayError.isNotEmpty && displayError.contains('Data loading error')) {
+           return Center(child: Text(displayError, style: theme.textTheme.bodyLarge));
+        }
+
+        if (snapshot.hasError) {
+           return Center(child: Text('Snapshot Error: ${snapshot.error.toString()}', style: theme.textTheme.bodyLarge));
+        }
+
+        final filteredWorkouts = snapshot.data?.where((workout) {
+          return workout.workoutType.toLowerCase() == workoutType;
+        }).toList() ?? [];
+
+        if (filteredWorkouts.isEmpty) {
+          return Center(child: Text("No $workoutType workouts scheduled or remaining today", style: theme.textTheme.bodyLarge));
+        }
+
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: filteredWorkouts.length,
+          itemBuilder: (context, index) {
+            final workout = filteredWorkouts[index];
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.w),
+              child: SizedBox(
+                width: 160.w,
+                child: WorkoutGridItem(workout: workout),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAppBar() {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        color: theme.colorScheme.primary,
+        child: FutureBuilder<UserModel?>(
+          future: _userFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: theme.colorScheme.onPrimary));
+            }
+
+            final user = snapshot.data;
+            final displayName = user?.name ?? user?.gmail.split('@').first ?? 'Guest';
+            final profilePicUrl = user?.profilePicture;
+
+            return Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage()),
+                    ).then((_) {
+                      _initData();
+                    });
+                  },
+                  child: CircleAvatar(
+                    radius: 24.r,
+                    backgroundColor: Colors.grey,
+                    backgroundImage: profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
+                    child: profilePicUrl == null
+                        ? Icon(Icons.person, color: theme.colorScheme.onPrimary, size: 28.w)
+                        : null,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Welcome,",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 16.sp)),
+                    Text(displayName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 18.sp)),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ProfilePage()),
-                      ).then((_) {
-                        final userEmail = Supabase.instance.client.auth.currentUser?.email;
-                        if (userEmail != null) {
-                          userFuture.value = userService.getUser(userEmail);
-                          // Refresh the completed list when returning from profile/full workout page
-                          progressService.getCompletedWorkoutIdsForToday(userEmail)
-                            .then((ids) => completedWorkouts.value = ids);
-                        }
-                      });
+                        MaterialPageRoute(builder: (context) => const NotificationPage()),
+                      );
                     },
-                    child: CircleAvatar(
-                      radius: 24.r, // CONVERTED
-                      backgroundColor: Colors.grey,
-                      backgroundImage: profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
-                      child: profilePicUrl == null
-                          ? Icon(Icons.person, color: theme.colorScheme.onPrimary, size: 28.w) // CONVERTED
-                          : null,
-                    ),
-                  ),
-                  SizedBox(width: 12.w), // CONVERTED
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Welcome,",
-                          style: theme.textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 16.sp)), // CONVERTED
-                      Text(displayName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 18.sp)), // CONVERTED
-                    ],
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const NotificationPage()),
-                        );
-                      },
-                      child: Icon(Icons.notifications, color: theme.colorScheme.onPrimary, size: 28.w)), // CONVERTED
-                ],
-              );
-            },
-          ),
+                    child: Icon(Icons.notifications, color: theme.colorScheme.onPrimary, size: 28.w)),
+              ],
+            );
+          },
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
         appBar: PreferredSize(
-            preferredSize: Size.fromHeight(80.h), // CONVERTED
-            child: buildAppBar()),
+            preferredSize: Size.fromHeight(80.h),
+            child: _buildAppBar()),
         body: LoadingOverlay(
-          isLoading: isLoading.value,
+          isLoading: _isLoading,
           child: Stack(
             children: [
               SingleChildScrollView(
                 child: Column(
                   children: [
-                    SizedBox(height: 5.h), // CONVERTED
+                    SizedBox(height: 5.h),
                     Text(
                       "Schedule's Days",
-                      style: TextStyle(fontSize: 20.sp), // CONVERTED
+                      style: TextStyle(fontSize: 20.sp),
                     ),
-                    SizedBox(height: 5.h), // CONVERTED
-                    Weekdays(selectedDay: selectedDay.value),
-                    SizedBox(height: 5.h), // CONVERTED
+                    SizedBox(height: 5.h),
+                    Weekdays(selectedDay: _selectedDay),
+                    SizedBox(height: 5.h),
                     Padding(
-                      padding: EdgeInsets.all(8.w), // CONVERTED
-                      child: const Row(
+                      padding: EdgeInsets.all(8.w),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                        children: const [
                           RedText("Cardio"),
-                          // TextButton removed as per original file structure, only RedText remains
-                        ],
-                      ),
-                    ),
-                    SizedBox( 
-                      height: 250.h, // CONVERTED
-                      child: buildWorkoutList("cardio"),
-                    ),
-                    SizedBox(height: 5.h), // CONVERTED
-                    Padding(
-                      padding: EdgeInsets.all(8.w), // CONVERTED
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          RedText("Exercise"),
-                          // TextButton removed as per original file structure, only RedText remains
                         ],
                       ),
                     ),
                     SizedBox(
-                      height: 250.h, // CONVERTED
-                      child: buildWorkoutList("exercise"),
+                      height: 250.h,
+                      child: _buildWorkoutList("cardio"),
+                    ),
+                    SizedBox(height: 5.h),
+                    Padding(
+                      padding: EdgeInsets.all(8.w),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          RedText("Exercise"),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: 250.h,
+                      child: _buildWorkoutList("exercise"),
                     ),
                   ],
                 ),
               ),
-              if (error.value != null && !error.value!.contains('Data loading error'))
+              if (_error != null && !_error!.contains('Data loading error'))
                 Positioned(
                   bottom: MediaQuery.of(context).padding.bottom + 16.h,
                   left: 16.w,
                   right: 16.w,
                   child: ErrorMessage(
-                    message: error.value!,
+                    message: _error!,
+                    compact: true,
                     onRetry: () {
-                      error.value = null;
-                      final userEmail = Supabase.instance.client.auth.currentUser?.email;
-                      if (userEmail != null) {
-                        userFuture.value = userService.getUser(userEmail);
+                      if (mounted) {
+                        setState(() {
+                          _error = null;
+                        });
                       }
+                      _initData();
                     },
                   ),
                 ),

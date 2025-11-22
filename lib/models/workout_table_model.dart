@@ -1,3 +1,4 @@
+// File: lib/models/workout_table_model.dart
 import 'package:json_annotation/json_annotation.dart';
 
 part 'workout_table_model.g.dart';
@@ -17,6 +18,7 @@ class WorkoutTableModel {
   final String? duration;
   @JsonKey(name: 'Gif Path')
   final String? gifPath;
+  @JsonKey(name: 'Description') // <--- THIS IS THE CRITICAL LINE
   final String? description;
 
   WorkoutTableModel({

@@ -16,7 +16,7 @@ WorkoutTableModel _$WorkoutTableModelFromJson(Map<String, dynamic> json) =>
       reps: (json['reps'] as num?)?.toInt(),
       duration: json['duration'] as String?,
       gifPath: json['Gif Path'] as String?,
-      description: json['description'] as String?,
+      description: json['Description'] as String?,
     );
 
 Map<String, dynamic> _$WorkoutTableModelToJson(WorkoutTableModel instance) =>
@@ -29,5 +29,5 @@ Map<String, dynamic> _$WorkoutTableModelToJson(WorkoutTableModel instance) =>
       'reps': instance.reps,
       'duration': instance.duration,
       'Gif Path': instance.gifPath,
-      'description': instance.description,
+      'Description': instance.description,
     };

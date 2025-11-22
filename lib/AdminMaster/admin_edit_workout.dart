@@ -51,11 +51,16 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
   }
 
   void _editWorkout() async {
+    String durationText = _durationController.text.trim();
+    if (durationText.isNotEmpty && durationText.split(':').length == 2) {
+      durationText = '00:$durationText';
+    }
+    
     final updatedWorkout = WorkoutTableModel(
       workoutId: widget.workoutToEdit.workoutId,
       workoutName: _nameController.text,
       workoutType: _typeController.text,
-      duration: _durationController.text,
+      duration: durationText,
       workoutCategory: _categoryController.text,
       reps: int.tryParse(_repsController.text),
       sets: int.tryParse(_setsController.text),
@@ -165,7 +170,7 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
             SizedBox(height: 20.h),
             _buildTextField(
                 controller: _durationController,
-                labelText: 'Duration'),
+                labelText: 'Duration (Format: MM:SS or H:MM:SS)'),
             SizedBox(height: 20.h),
             _buildTextField(
                 controller: _categoryController, labelText: 'Category'),

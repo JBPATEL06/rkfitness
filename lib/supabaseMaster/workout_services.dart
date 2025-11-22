@@ -70,8 +70,7 @@ class WorkoutTableService {
       return [];
     }
   }
-
-  Future<void> createWorkoutWithGif({
+Future<void> createWorkoutWithGif({
     required WorkoutTableModel workout,
     required File gifFile,
     required String fileName,
@@ -88,9 +87,9 @@ class WorkoutTableService {
       await _supabaseClient.from('Workout Table').insert(workoutData);
     } catch (e, st) {
       Logger.error('Error creating workout with GIF', e, st);
+      rethrow; // <--- RETHROW ADDED HERE TO PROPAGATE THE ERROR
     }
   }
-
   Future<void> updateWorkout({
     required WorkoutTableModel workout,
     File? newGifFile,
