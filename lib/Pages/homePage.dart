@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 import 'package:rkfitness/Pages/profilepage.dart';
 import 'package:rkfitness/customWidgets/weekdays.dart';
-import 'package:rkfitness/customeWidAndFun.dart';
+import 'package:rkfitness/widgets/custom_wid_and_fun.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:rkfitness/widgets/workout_grid_item.dart';
 import 'package:rkfitness/widgets/connection_status.dart';

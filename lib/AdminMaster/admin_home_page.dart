@@ -9,7 +9,7 @@ import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:rkfitness/supabaseMaster/workout_services.dart';
-import 'package:rkfitness/widgets/custom_widgets.dart';
+import 'package:rkfitness/widgets/custom_wid_and_fun.dart';
 // REMOVED: import 'package:rkfitness/utils/responsive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

@@ -6,7 +6,7 @@ import 'package:rkfitness/Pages/fullWorkout.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../customWidgets/weekdays.dart';
+import '../../customWidgets/weekdays.dart';
 
 class CustomeWidAndFun {
 

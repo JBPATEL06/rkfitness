@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/supabaseMaster/auth_service.dart';
-import 'package:rkfitness/supabaseMaster/useServices.dart';
+import 'package:rkfitness/supabaseMaster/user_services.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();

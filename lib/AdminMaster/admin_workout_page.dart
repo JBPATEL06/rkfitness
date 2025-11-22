@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rkfitness/widgets/custom_widgets.dart'; // Assuming this imports CustomeWidAndFun
+import 'package:rkfitness/widgets/custom_wid_and_fun.dart'; // Assuming this imports CustomeWidAndFun
 import 'package:rkfitness/models/workout_table_model.dart';
 // REMOVED: import 'package:rkfitness/utils/responsive.dart';
 // ADDED import for screenutil extensions (.w, .h, .sp, .r)
