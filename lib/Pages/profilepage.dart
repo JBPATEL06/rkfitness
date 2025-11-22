@@ -5,6 +5,7 @@ import 'package:rkfitness/Pages/changePassword.dart';
 import 'package:rkfitness/Pages/editProfile.dart';
 import 'package:rkfitness/providers/user_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ADDED
 
 import 'calendar_page.dart';
 import 'loginpage.dart';
@@ -27,12 +28,25 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // 1. Clear local provider state
+    if (mounted) {
+      context.read<UserProvider>().clearUser();
+    }
+    
+    // 2. Clear Shared Preferences
+    await prefs.clear();
+
+    // 3. Clear Supabase session and navigate safely
     await Supabase.instance.client.auth.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-          (Route<dynamic> route) => false,
-    );
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+            (Route<dynamic> route) => false,
+      );
+    }
   }
 
   static Widget _userStatColumn(BuildContext context, {required String label, required String value}) {

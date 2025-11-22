@@ -8,6 +8,9 @@ import 'package:rkfitness/models/user_model.dart';
 import 'package:rkfitness/supabaseMaster/useServices.dart';
 import 'package:rkfitness/supabaseMaster/workout_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:rkfitness/providers/user_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'admin_calendar.dart';
 
@@ -56,6 +59,17 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   }
 
   void _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Clear local provider state
+    if (mounted) {
+      context.read<UserProvider>().clearUser();
+    }
+    
+    // 2. Clear Shared Preferences
+    await prefs.clear();
+
+    // 3. Clear Supabase session and navigate safely
     await Supabase.instance.client.auth.signOut();
     if (mounted) {
       Navigator.pushAndRemoveUntil(
@@ -74,9 +88,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('PROFILE'),
+        // FIX: Changed icon from arrow_back to close
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.push(context,MaterialPageRoute(builder: (context) =>  AdminDashboard())),
+          icon: const Icon(Icons.close, color: Colors.white), // CHANGED ICON
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: FutureBuilder<Map<String, dynamic>>(

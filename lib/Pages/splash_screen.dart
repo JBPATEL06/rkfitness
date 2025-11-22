@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:rkfitness/Pages/homePage.dart';
 import 'package:rkfitness/Pages/user_dashboard.dart';
 import 'package:rkfitness/Pages/loginpage.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ADDED
+import 'package:rkfitness/AdminMaster/admin_Dashboard.dart'; // ADDED
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,16 +38,32 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     
     if (!mounted) return;
 
+    final prefs = await SharedPreferences.getInstance();
+    const String isLoggedInKey = 'isLoggedIn';
+    const String userTypeKey = 'userType';
+
+    final isLoggedIn = prefs.getBool(isLoggedInKey) ?? false;
+    final userType = prefs.getString(userTypeKey);
+
     final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) =>  UserDashBoard()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+    
+    if (isLoggedIn && session != null) {
+      if (userType == 'admin') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AdminDashboard()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const UserDashBoard()),
+        );
+      }
+      return;
     }
+
+    // If local state is missing or invalid, go to login.
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
   }
 
   @override

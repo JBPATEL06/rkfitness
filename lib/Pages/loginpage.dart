@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:rkfitness/AdminMaster/admin_Dashboard.dart';
 import 'package:rkfitness/forget_password.dart';
 import 'package:rkfitness/Pages/user_dashboard.dart';
 import 'package:rkfitness/providers/auth_provider.dart';
-// REMOVED: import 'package:rkfitness/utils/responsive.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:rkfitness/widgets/connection_status.dart';
 import 'package:rkfitness/widgets/error_message.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ADDED
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +20,9 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  static const String _isLoggedInKey = 'isLoggedIn';
+  static const String _userTypeKey = 'userType';
 
   Future<void> _login(BuildContext context) async {
     final authProvider = context.read<AuthProvider>();
@@ -37,6 +40,12 @@ class _LoginPageState extends State<LoginPage> {
           content: Text("Login successful!"),
         ),
       );
+
+      final prefs = await SharedPreferences.getInstance();
+      final userType = authProvider.currentUser?.userType ?? 'user';
+      // SAVE LOGIN STATE AND USER TYPE
+      await prefs.setBool(_isLoggedInKey, true);
+      await prefs.setString(_userTypeKey, userType);
 
       if (authProvider.currentUser?.userType == 'admin') {
         Navigator.pushReplacement(
@@ -66,8 +75,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _createAndProvisionNewUser(String userEmail) async {
-    // Deprecated: user provisioning is now handled in AuthProvider.
-    // Removed to reduce duplicate provisioning logic.
     return;
   }
 
@@ -92,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.black,
             body: SingleChildScrollView(
               child: Container(
-                height: 1.sh, // Use ScreenUtil.sh for full screen height
+                height: 1.sh,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage("assets/images/login_background.png"),
