@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:rkfitness/main.dart';
 import 'package:rkfitness/models/workout_table_model.dart';
 import 'package:rkfitness/providers/progress_provider.dart';
 import 'package:rkfitness/providers/schedule_provider.dart';
@@ -20,22 +19,28 @@ class FullWorkoutPage extends StatefulWidget {
 }
 
 class _FullWorkoutPageState extends State<FullWorkoutPage> {
-  // NOTE: This MyApp reference is unnecessary and can be safely ignored but kept for compatibility.
-  // MyApp myApp = MyApp();
   bool _isWorkoutFinished = false;
 
   int _currentSet = 1;
-  bool _isSetInProgress = false;
-  bool _canCompleteSet = false;
   bool _isResting = false;
   int _restSeconds = 30;
   Timer? _restTimer;
 
+  // State for the work period
+  bool _isWorkTimerRunning = false;
+  int _workTimerSeconds = 0;
+  final int _workDurationSeconds = 20; // 20 seconds work period
+  Timer? _workTimer;
+  bool _canCompleteSet = false;
+
+  // Cardio variables
   Timer? _cardioTimer;
   Duration _cardioDuration = Duration.zero;
   bool _isCardioPaused = true;
   Duration _initialCardioDuration = Duration.zero;
-  UserProgressService _userProgressService = UserProgressService();
+
+  // THE OBJECT YOU CORRECTLY IDENTIFIED: Used directly now.
+  final UserProgressService _userProgressService = UserProgressService();
 
   @override
   void initState() {
@@ -48,12 +53,10 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     final userEmail = Supabase.instance.client.auth.currentUser?.email;
     Duration calculatedDuration = Duration.zero;
 
-    // Safety check: Determine user role to skip unnecessary schedule fetching
     final authProvider = context.read<AuthProvider>();
     final isAdmin = authProvider.currentUser?.userType == 'admin';
 
-    // Only run this complex schedule-fetching logic if the user is a standard user AND it's cardio
-    if (isCardio && userEmail != null && !isAdmin) { 
+    if (isCardio && userEmail != null && !isAdmin) {
       final scheduleProvider = context.read<ScheduleProvider>();
       final schedule = await scheduleProvider.getCustomWorkoutDetailsForToday(
         userEmail,
@@ -66,13 +69,11 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           calculatedDuration = Duration(seconds: customDuration);
         }
       }
-      
-      // Fallback to default duration if custom duration isn't set or applicable
+
       if (calculatedDuration == Duration.zero) {
         calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00");
       }
     } else if (isCardio) {
-      // For Admin, just use the workout's default duration
       calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00");
     }
 
@@ -88,6 +89,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
   void dispose() {
     _restTimer?.cancel();
     _cardioTimer?.cancel();
+    _workTimer?.cancel();
     super.dispose();
   }
 
@@ -102,39 +104,37 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     return Duration(minutes: minutes, seconds: seconds);
   }
 
-  // Final completion step: logs progress and sets finished flag
   Future<void> _completeWorkoutSession() async {
-    await _logWorkoutProgress();
+    // Note: Logging for the final set is handled in _completeSet
 
     if (mounted) {
       setState(() {
         _isWorkoutFinished = true;
-        // Ensure timers are cancelled on completion
         _restTimer?.cancel();
         _cardioTimer?.cancel();
+        _workTimer?.cancel();
       });
     }
   }
-  
-  // Renamed to internal logging logic
+
+  // FIX APPLIED HERE: Direct Service Call
   Future<void> _logWorkoutProgress() async {
     final userEmail = Supabase.instance.client.auth.currentUser?.email;
     if (userEmail == null) return;
 
-    final progressProvider = context.read<ProgressProvider>();
-    
+    // Use the local service object directly, bypassing the provider hierarchy
     try {
-      await progressProvider.logWorkoutCompletion(
+      await _userProgressService.logWorkoutCompletion(
         userEmail: userEmail,
         workout: widget.workout,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.green,
             content: Text(
-              '${widget.workout.workoutName} completed and progress logged!',
+              '${widget.workout.workoutName} set completion logged.',
             ),
           ),
         );
@@ -151,22 +151,41 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     }
   }
 
-  // UPDATED: Start button logic simplified. Now just enables the Complete button.
+  // LOGIC START: Starts the 20-second work timer
   void _startSet() {
-    setState(() {
-      _isSetInProgress = true;
-      _canCompleteSet = true;
+    if (mounted) {
+      setState(() {
+        _isWorkTimerRunning = true;
+        _canCompleteSet = false;
+        _workTimerSeconds = _workDurationSeconds;
+      });
+    }
+
+    _workTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_workTimerSeconds > 1) {
+        if (mounted) setState(() => _workTimerSeconds--);
+      } else {
+        _workTimer?.cancel();
+        if (mounted) {
+          setState(() {
+            _isWorkTimerRunning = false;
+            _canCompleteSet = true; // Enable Complete button
+          });
+        }
+      }
     });
   }
 
-  // UPDATED: Complete button now calls _completeWorkoutSession, ending the cycle.
+  // LOGIC COMPLETE: Logs the set, then starts rest or finishes workout
   void _completeSet() {
-    // Check if this is the final set before logging the whole workout
+    // Log progress (1 count per workout ID)
+    _logWorkoutProgress();
+
     if (_currentSet >= (widget.workout.sets ?? 1)) {
-       _completeWorkoutSession(); // Log final completion
+      // Final set complete, navigate to final screen
+      _completeWorkoutSession();
     } else {
-      // Not the final set, log current set and start rest timer
-      _logWorkoutProgress(); 
+      // Not the final set, start rest timer
       _startRestTimer();
     }
   }
@@ -176,8 +195,9 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     if (mounted) {
       setState(() {
         _isResting = true;
-        _isSetInProgress = false;
-        _restSeconds = 30;
+        _currentSet++; // Move to next set number
+        _restSeconds = 30; // 30 seconds rest
+        _canCompleteSet = false; // Reset complete state
       });
     }
     _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -194,12 +214,11 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     if (mounted) {
       setState(() {
         _isResting = false;
-        _currentSet++;
+        // _startSet(); // Returns to the Start Set state
       });
     }
   }
 
-  // DEFINITION FOR TOGGLE CARDIO TIMER (Required for the crash fix)
   void _toggleCardioTimer() {
     if (_initialCardioDuration == Duration.zero) return;
 
@@ -211,21 +230,20 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         } else {
           _cardioTimer = Timer.periodic(
             const Duration(seconds: 1),
-            (_) => _updateCardioTime(),
+                (_) => _updateCardioTime(),
           );
         }
       });
     }
   }
 
-  // UPDATED: Cardio timer update now calls _completeWorkoutSession on finish.
   void _updateCardioTime() {
     if (_cardioDuration.inSeconds > 0) {
       if (mounted)
         setState(() => _cardioDuration -= const Duration(seconds: 1));
     } else {
       _cardioTimer?.cancel();
-      _completeWorkoutSession(); // Log final completion
+      _completeWorkoutSession();
     }
   }
 
@@ -242,13 +260,10 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if the current user is an admin
     final authProvider = context.watch<AuthProvider>();
     final isAdmin = authProvider.currentUser?.userType == 'admin';
-    
     bool isExercise = widget.workout.workoutType.toLowerCase() == 'exercise';
-    
-    // FIX: Show loading indicator while AuthProvider state is resolving
+
     if (authProvider.isLoading) {
       return Scaffold(
         appBar: AppBar(
@@ -257,10 +272,9 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
-        // FIX: Explicitly set leading to ensure correct navigation behavior
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -280,13 +294,15 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
                   SizedBox(height: 20.h),
                   _buildDetailsSection(widget.workout),
                   SizedBox(height: 20.h),
-                  
-                  // Conditional rendering based on role
+
                   if (isAdmin)
                     const Center(
-                      child: Text(
-                        'Admin View: Progress tracking is disabled.',
-                        style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Admin View: Progress tracking is disabled.',
+                          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                        ),
                       ),
                     )
                   else if (isExercise)
@@ -311,12 +327,11 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
   Widget _buildMediaSection(String? gifPath) {
     final workoutGifUrl = gifPath != null
         ? Supabase.instance.client.storage
-              .from('image_and_gifs')
-              .getPublicUrl(gifPath)
+        .from('image_and_gifs')
+        .getPublicUrl(gifPath)
         : 'https://via.placeholder.com/400';
 
     return Container(
-      // Use responsive height (35% of design height)
       height: 240.h,
       width: double.infinity,
       color: Theme.of(context).inputDecorationTheme.fillColor,
@@ -406,6 +421,57 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
   Widget _buildExerciseActiveState() {
     final theme = Theme.of(context);
     final totalSets = widget.workout.sets ?? 1;
+
+    Widget content;
+
+    if (_isWorkTimerRunning) {
+      // State 2: Work Timer Running (Button Disabled)
+      content = Column(
+        children: [
+          Text(
+            'WORK TIME REMAINING',
+            style: theme.textTheme.headlineSmall?.copyWith(color: Colors.grey),
+          ),
+          Text(
+            '$_workTimerSeconds s',
+            style: theme.textTheme.displayLarge?.copyWith(color: theme.colorScheme.primary),
+          ),
+          SizedBox(height: 20.h),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: null, // Button disabled during work
+              child: Text('Set Active - Wait ${_workTimerSeconds}s'),
+            ),
+          ),
+        ],
+      );
+    } else if (_canCompleteSet) {
+      // State 3: Work Timer Finished (Complete Button Enabled)
+      content = Column(
+        children: [
+          SizedBox(height: 20.h),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _completeSet, // Log and rest/finish
+              child: Text(_currentSet >= totalSets ? 'Finish Workout' : 'Set Complete & Rest'),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // State 1: Initial Start Button (or after rest)
+      content = SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _startSet,
+          child: const Text('Start Set'),
+        ),
+      );
+    }
+
+
     return Column(
       children: [
         Text(
@@ -421,14 +487,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           ],
         ),
         SizedBox(height: 20.h),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            // Logic is now consolidated into _completeWorkoutSession
-            onPressed: _completeWorkoutSession,
-            child: const Text('Complete Workout'),
-          ),
-        ),
+        content,
       ],
     );
   }
@@ -471,15 +530,13 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           SizedBox(height: 20.h),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-
-            //logWorkoutCompletion
             child: const Text('Back to Schedule'),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildStatBox(String label, String? value) {
     final theme = Theme.of(context);
     return Expanded(
@@ -556,7 +613,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
                     : theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
               ),
-              onPressed: isDisabled ? null : _toggleCardioTimer, // This should now correctly refer to the State method.
+              onPressed: isDisabled ? null : _toggleCardioTimer,
             ),
             SizedBox(width: 52.w),
           ],

@@ -8,7 +8,7 @@ part of 'user_progress_model.dart';
 
 UserProgressModel _$UserProgressModelFromJson(Map<String, dynamic> json) =>
     UserProgressModel(
-      id: json['id'] as String?,
+      id: json['id'] as String,
       day: json['day'] as String?,
       time: json['time stamp'] == null
           ? null

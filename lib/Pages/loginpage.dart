@@ -8,7 +8,7 @@ import 'package:rkfitness/providers/auth_provider.dart';
 import 'package:rkfitness/widgets/loading_overlay.dart';
 import 'package:rkfitness/widgets/connection_status.dart';
 import 'package:rkfitness/widgets/error_message.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // ADDED
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login(BuildContext context) async {
     final authProvider = context.read<AuthProvider>();
-    
+
     try {
       final userEmail = _emailController.text.trim();
       final password = _passwordController.text;
@@ -99,7 +99,9 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.black,
             body: SingleChildScrollView(
               child: Container(
-                height: 1.sh,
+                // FIX: Use MediaQuery.of(context).size.height instead of 1.sh
+                // This reliably sets the height without depending on the ScreenUtil context field that was causing the crash.
+                height: MediaQuery.of(context).size.height,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage("assets/images/login_background.png"),

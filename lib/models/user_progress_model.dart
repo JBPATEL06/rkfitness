@@ -5,7 +5,8 @@ part 'user_progress_model.g.dart';
 
 @JsonSerializable()
 class UserProgressModel {
-  final String? id;
+  // Required because the database table is NOT NULL
+  final String id;
 
   @JsonKey(name: 'day')
   final String? day;
@@ -16,17 +17,14 @@ class UserProgressModel {
   @JsonKey(name: 'User Email')
   final String? userEmail;
 
-  // NEW Columns reflecting the total count of completed workouts for the day
   @JsonKey(name: 'completedExercise')
   final int? completedExerciseCount;
 
   @JsonKey(name: 'completedCardio')
   final int? completedCardioCount;
 
-  // REMOVED OLD COLUMNS: completed_exercise_ids, completed_cardio_ids, sets_list, reps_list, duration_list_seconds
-
   UserProgressModel({
-    this.id,
+    required this.id, // Made required
     this.day,
     this.time,
     this.userEmail,

@@ -1,6 +1,7 @@
 import '../utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../models/user_progress_model.dart';
 import '../models/user_model.dart';
 import '../models/workout_table_model.dart';
@@ -13,7 +14,7 @@ class UserProgressService {
       final List<dynamic> response = await _supabaseClient
           .from('user Progress')
           .select()
-          .eq('User Email', userGmailId);
+          .eq('"User Email"', userGmailId);
 
       Logger.info('USER PROGRESS FETCHED FOR $userGmailId');
       Logger.debug('Response: $response');
@@ -33,7 +34,7 @@ class UserProgressService {
       final response = await _supabaseClient
           .from('user Progress')
           .select()
-          .eq('User Email', userGmailId)
+          .eq('"User Email"', userGmailId)
           .gte('time stamp', startOfDay)
           .lt('time stamp', endOfNextDay)
           .maybeSingle();
@@ -45,15 +46,13 @@ class UserProgressService {
       return null;
     }
   }
-  
-  // NEW FUNCTION: Retrieves all workout IDs completed today
+
   Future<Set<String>> getCompletedWorkoutIdsForToday(String userEmail) async {
     try {
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      
-      // We query the raw logs table 'user workout logs'
+
       final response = await _supabaseClient
-          .from('user workout logs') 
+          .from('user workout logs')
           .select('workout_id')
           .eq('user_email', userEmail)
           .eq('date', today);
@@ -75,10 +74,9 @@ class UserProgressService {
       final startOfDay = DateTime(day.year, day.month, day.day).toIso8601String();
       final endOfNextDay = DateTime(day.year, day.month, day.day + 1).toIso8601String();
 
-      // FIX: Use double quotes around the column name to force the space and prevent conversion to camelCase.
       final List<dynamic> progressResponse = await _supabaseClient
           .from('user Progress')
-          .select('"User Email"') 
+          .select('"User Email"')
           .gte('time stamp', startOfDay)
           .lt('time stamp', endOfNextDay)
           .or('completedExercise.gt.0,completedCardio.gt.0');
@@ -95,7 +93,7 @@ class UserProgressService {
       final List<dynamic> userResponse = await _supabaseClient
           .from('User')
           .select()
-          .filter('Gmail', 'in', userEmails);
+          .filter('gmail', 'in', userEmails);
 
       return userResponse
           .map((data) => UserModel.fromJson(data))
@@ -106,7 +104,7 @@ class UserProgressService {
     }
   }
 
-  // UPDATED: Now uses a new log table 'user workout logs' for detailed logging
+  // FIX APPLIED: Uses model-based mapping to ensure stable field access before updating.
   Future<void> logWorkoutCompletion({
     required String userEmail,
     required WorkoutTableModel workout,
@@ -117,7 +115,21 @@ class UserProgressService {
     final isExercise = workout.workoutType.toLowerCase() == 'exercise';
 
     try {
-      // 1. Log the individual completion event (new detailed log table)
+      // 1. CHECK FOR DUPLICATE LOGS FOR TODAY
+      final isAlreadyCompleted = await _supabaseClient
+          .from('user workout logs')
+          .select('workout_id')
+          .eq('user_email', userEmail)
+          .eq('workout_id', workout.workoutId)
+          .eq('date', formattedDate)
+          .maybeSingle();
+
+      if (isAlreadyCompleted != null) {
+        Logger.info('Workout ${workout.workoutId} already logged today. Skipping update.');
+        return; // Exit early if already counted today
+      }
+
+      // 2. Log the individual completion event (detailed log table)
       await _supabaseClient.from('user workout logs').insert({
         'user_email': userEmail,
         'workout_id': workout.workoutId,
@@ -125,33 +137,39 @@ class UserProgressService {
         'date': formattedDate,
       });
 
-      // 2. Update the aggregated 'user Progress' table (for admin visibility and history)
-      final existingProgress = await _supabaseClient
+      // 3. Update the aggregated 'user Progress' table
+      // Fetch all columns (*) and rely on the model for reliable key access.
+      final existingProgressMap = await _supabaseClient
           .from('user Progress')
-          .select()
-          .eq('User Email', userEmail)
+          .select('*')
+          .eq('"User Email"', userEmail)
           .eq('day', dayOfWeek)
           .maybeSingle();
 
-      if (existingProgress != null) {
-        final progress = UserProgressModel.fromJson(existingProgress);
+      if (existingProgressMap != null) {
+        // FIX: Use model to reliably parse the data, regardless of database casing
+        final progress = UserProgressModel.fromJson(existingProgressMap);
 
+        final String progressId = progress.id;
         final currentExerciseCount = progress.completedExerciseCount ?? 0;
         final currentCardioCount = progress.completedCardioCount ?? 0;
 
         Map<String, dynamic> updateData = {};
 
+        // Use the model's key for the update payload (PostgREST handles final quoting)
         if (isExercise) {
           updateData['completedExercise'] = currentExerciseCount + 1;
         } else {
           updateData['completedCardio'] = currentCardioCount + 1;
         }
 
-        if (progress.id != null) {
-          await _supabaseClient.from('user Progress').update(updateData).eq('id', progress.id!);
-        }
+        // Final update should succeed using the stable progressId
+        await _supabaseClient.from('user Progress').update(updateData).eq('id', progressId);
+
       } else {
+        // Insert new progress record
         final newProgress = UserProgressModel(
+          id: const Uuid().v4(),
           userEmail: userEmail,
           day: dayOfWeek,
           time: today,
