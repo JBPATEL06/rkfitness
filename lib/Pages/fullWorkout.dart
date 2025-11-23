@@ -8,6 +8,7 @@ import 'package:rkfitness/providers/schedule_provider.dart';
 import 'package:rkfitness/supabaseMaster/user_progress_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rkfitness/providers/auth_provider.dart';
+import 'package:rkfitness/Pages/user_dashboard.dart';
 
 class FullWorkoutPage extends StatefulWidget {
   final WorkoutTableModel workout;
@@ -39,7 +40,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
   bool _isCardioPaused = true;
   Duration _initialCardioDuration = Duration.zero;
 
-  // THE OBJECT YOU CORRECTLY IDENTIFIED: Used directly now.
+  // Service for logging progress
   final UserProgressService _userProgressService = UserProgressService();
 
   @override
@@ -63,6 +64,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         widget.workout.workoutId,
       );
 
+      // 1. Try to get Custom Duration from Schedule
       if (schedule != null && schedule['customDuration'] != null) {
         final customDuration = schedule['customDuration'] as int;
         if (customDuration > 0) {
@@ -70,11 +72,13 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         }
       }
 
+      // 2. Fallback to Default Duration from Workout Table
       if (calculatedDuration == Duration.zero) {
-        calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00");
+        calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00:00");
       }
     } else if (isCardio) {
-      calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00");
+      // Default for non-scheduled or admin view
+      calculatedDuration = _parseDuration(widget.workout.duration ?? "00:00:00");
     }
 
     if (mounted) {
@@ -93,20 +97,30 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     super.dispose();
   }
 
+  // UPDATED: Handles 'HH:MM:SS' (Database) and 'MM:SS' formats
   Duration _parseDuration(String s) {
     if (s.isEmpty) return Duration.zero;
-    int minutes = 0, seconds = 0;
+
     List<String> parts = s.split(':');
-    if (parts.length == 2) {
+    int hours = 0;
+    int minutes = 0;
+    int seconds = 0;
+
+    if (parts.length == 3) {
+      // Format: HH:MM:SS
+      hours = int.tryParse(parts[0]) ?? 0;
+      minutes = int.tryParse(parts[1]) ?? 0;
+      seconds = int.tryParse(parts[2]) ?? 0;
+    } else if (parts.length == 2) {
+      // Format: MM:SS
       minutes = int.tryParse(parts[0]) ?? 0;
       seconds = int.tryParse(parts[1]) ?? 0;
     }
-    return Duration(minutes: minutes, seconds: seconds);
+
+    return Duration(hours: hours, minutes: minutes, seconds: seconds);
   }
 
   Future<void> _completeWorkoutSession() async {
-    // Note: Logging for the final set is handled in _completeSet
-
     if (mounted) {
       setState(() {
         _isWorkoutFinished = true;
@@ -117,12 +131,10 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     }
   }
 
-  // FIX APPLIED HERE: Direct Service Call
   Future<void> _logWorkoutProgress() async {
     final userEmail = Supabase.instance.client.auth.currentUser?.email;
     if (userEmail == null) return;
 
-    // Use the local service object directly, bypassing the provider hierarchy
     try {
       await _userProgressService.logWorkoutCompletion(
         userEmail: userEmail,
@@ -134,7 +146,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           SnackBar(
             backgroundColor: Colors.green,
             content: Text(
-              '${widget.workout.workoutName} set completion logged.',
+              '${widget.workout.workoutName} progress saved.',
             ),
           ),
         );
@@ -151,7 +163,6 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     }
   }
 
-  // LOGIC START: Starts the 20-second work timer
   void _startSet() {
     if (mounted) {
       setState(() {
@@ -169,23 +180,19 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         if (mounted) {
           setState(() {
             _isWorkTimerRunning = false;
-            _canCompleteSet = true; // Enable Complete button
+            _canCompleteSet = true;
           });
         }
       }
     });
   }
 
-  // LOGIC COMPLETE: Logs the set, then starts rest or finishes workout
   void _completeSet() {
-    // Log progress (1 count per workout ID)
     _logWorkoutProgress();
 
     if (_currentSet >= (widget.workout.sets ?? 1)) {
-      // Final set complete, navigate to final screen
       _completeWorkoutSession();
     } else {
-      // Not the final set, start rest timer
       _startRestTimer();
     }
   }
@@ -195,9 +202,9 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     if (mounted) {
       setState(() {
         _isResting = true;
-        _currentSet++; // Move to next set number
-        _restSeconds = 30; // 30 seconds rest
-        _canCompleteSet = false; // Reset complete state
+        _currentSet++;
+        _restSeconds = 30;
+        _canCompleteSet = false;
       });
     }
     _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -214,7 +221,6 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     if (mounted) {
       setState(() {
         _isResting = false;
-        // _startSet(); // Returns to the Start Set state
       });
     }
   }
@@ -311,7 +317,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
                         : _isResting
                         ? _buildRestingState()
                         : _buildExerciseActiveState()
-                  else // Cardio
+                  else
                     _isWorkoutFinished
                         ? _buildFinishedState()
                         : _buildCardioActiveState(),
@@ -425,7 +431,6 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
     Widget content;
 
     if (_isWorkTimerRunning) {
-      // State 2: Work Timer Running (Button Disabled)
       content = Column(
         children: [
           Text(
@@ -440,28 +445,26 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: null, // Button disabled during work
+              onPressed: null,
               child: Text('Set Active - Wait ${_workTimerSeconds}s'),
             ),
           ),
         ],
       );
     } else if (_canCompleteSet) {
-      // State 3: Work Timer Finished (Complete Button Enabled)
       content = Column(
         children: [
           SizedBox(height: 20.h),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _completeSet, // Log and rest/finish
+              onPressed: _completeSet,
               child: Text(_currentSet >= totalSets ? 'Finish Workout' : 'Set Complete & Rest'),
             ),
           ),
         ],
       );
     } else {
-      // State 1: Initial Start Button (or after rest)
       content = SizedBox(
         width: double.infinity,
         child: ElevatedButton(
@@ -470,7 +473,6 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
         ),
       );
     }
-
 
     return Column(
       children: [
@@ -529,8 +531,14 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
           Text('Workout Complete!', style: theme.textTheme.headlineMedium),
           SizedBox(height: 20.h),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Back to Schedule'),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const UserDashBoard()),
+                    (route) => false,
+              );
+            },
+            child: const Text('Back to Dashboard'),
           ),
         ],
       ),
@@ -571,8 +579,19 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
   Widget _buildCardioActiveState() {
     final theme = Theme.of(context);
     String strDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = strDigits(_cardioDuration.inMinutes.remainder(60));
-    final seconds = strDigits(_cardioDuration.inSeconds.remainder(60));
+
+    // Helper to format HH:MM:SS or MM:SS depending on duration length
+    String formattedTime;
+    if (_cardioDuration.inHours > 0) {
+      final hours = strDigits(_cardioDuration.inHours);
+      final minutes = strDigits(_cardioDuration.inMinutes.remainder(60));
+      final seconds = strDigits(_cardioDuration.inSeconds.remainder(60));
+      formattedTime = '$hours:$minutes:$seconds';
+    } else {
+      final minutes = strDigits(_cardioDuration.inMinutes.remainder(60));
+      final seconds = strDigits(_cardioDuration.inSeconds.remainder(60));
+      formattedTime = '$minutes:$seconds';
+    }
 
     final isDisabled = _initialCardioDuration == Duration.zero;
 
@@ -580,7 +599,7 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          '$minutes:$seconds',
+          formattedTime,
           style: theme.textTheme.displayLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
