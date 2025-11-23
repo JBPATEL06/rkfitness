@@ -17,8 +17,7 @@ class AddWorkoutPage extends StatefulWidget {
 
 class _AddWorkoutPageState extends State<AddWorkoutPage> {
   final TextEditingController _nameController = TextEditingController();
-  // final TextEditingController _typeController = TextEditingController(); // REMOVE THIS
-  String? _selectedWorkoutType; // ADD THIS FOR DROPDOWN
+  String? _selectedWorkoutType;
   final TextEditingController _durationController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _repsController = TextEditingController();
@@ -47,7 +46,7 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
       }
       return;
     }
-    if (_selectedWorkoutType == null) { // ADD THIS VALIDATION
+    if (_selectedWorkoutType == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select a workout type.')),
@@ -60,23 +59,32 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
     final fileExtension = _pickedImage!.path.split('.').last;
     final fileName = '$workoutId.$fileExtension';
 
-    String durationText = _durationController.text.trim();
-    if (durationText.isNotEmpty && durationText.split(':').length == 2) {
-      durationText = '00:$durationText';
+    String durationInput = _durationController.text.trim();
+    String? finalDuration;
+
+    // FIX: Handle empty string vs valid time format
+    if (durationInput.isEmpty) {
+      finalDuration = null; // Send NULL to database if empty
+    } else {
+      if (durationInput.split(':').length == 2) {
+        finalDuration = '00:$durationInput'; // Convert MM:SS to HH:MM:SS
+      } else {
+        finalDuration = durationInput; // Assume HH:MM:SS
+      }
     }
 
     final newWorkout = WorkoutTableModel(
       workoutId: workoutId,
       workoutName: _nameController.text,
-      workoutType: _selectedWorkoutType!.toLowerCase(), // USE DROPDOWN VALUE, ENSURE LOWERCASE
-      duration: durationText,
+      workoutType: _selectedWorkoutType!.toLowerCase(),
+      duration: finalDuration, // Use the nullable variable
       workoutCategory: _categoryController.text,
       reps: int.tryParse(_repsController.text),
       sets: int.tryParse(_setsController.text),
       description: _descriptionController.text,
     );
 
-    try { // ADD TRY-CATCH FOR ERROR MESSAGE
+    try {
       await _workoutService.createWorkoutWithGif(
         workout: newWorkout,
         gifFile: _pickedImage!,
@@ -101,7 +109,6 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    // _typeController.dispose(); // REMOVE THIS
     _durationController.dispose();
     _categoryController.dispose();
     _repsController.dispose();
@@ -144,7 +151,6 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Old image picker removed, new one added below
             GestureDetector(
               onTap: _pickImage,
               child: Container(
@@ -156,27 +162,27 @@ class _AddWorkoutPageState extends State<AddWorkoutPage> {
                   border: Border.all(color: theme.colorScheme.primary, width: 2),
                   image: _pickedImage != null
                       ? DecorationImage(
-                          image: FileImage(_pickedImage!),
-                          fit: BoxFit.cover,
-                        )
+                    image: FileImage(_pickedImage!),
+                    fit: BoxFit.cover,
+                  )
                       : null,
                 ),
                 child: _pickedImage == null
                     ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_photo_alternate, size: 50.w, color: theme.colorScheme.primary),
-                          SizedBox(height: 8.h),
-                          Text('Tap to pick GIF/Image', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary)),
-                        ],
-                      )
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate, size: 50.w, color: theme.colorScheme.primary),
+                    SizedBox(height: 8.h),
+                    Text('Tap to pick GIF/Image', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.primary)),
+                  ],
+                )
                     : null,
               ),
             ),
             SizedBox(height: 30.h),
             _buildTextField(controller: _nameController, labelText: 'Name'),
             SizedBox(height: 20.h),
-            DropdownButtonFormField<String>( // ADDED DROPDOWN
+            DropdownButtonFormField<String>(
               value: _selectedWorkoutType,
               decoration: const InputDecoration(
                 labelText: 'Workout Type',
