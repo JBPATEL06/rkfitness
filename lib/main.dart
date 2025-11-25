@@ -17,7 +17,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart'; // ADDED
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set preferred orientations to portrait only
+  // Set preferred orientations to portrait   only
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
