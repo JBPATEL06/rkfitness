@@ -202,12 +202,12 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
             _buildTextField(controller: _emailController, labelText: 'Email', enabled: false),
             SizedBox(height: 20.h),
             DropdownButtonFormField<String>(
-              value: _selectedGender,
+              initialValue: _selectedGender,
               decoration: const InputDecoration(
                 labelText: 'Gender',
               ),
               items: ['Male', 'Female', 'Other']
-                  .map((label) => DropdownMenuItem(child: Text(label), value: label))
+                  .map((label) => DropdownMenuItem(value: label, child: Text(label)))
                   .toList(),
               onChanged: (value) {
                 setState(() {

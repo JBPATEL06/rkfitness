@@ -245,8 +245,9 @@ class _FullWorkoutPageState extends State<FullWorkoutPage> {
 
   void _updateCardioTime() {
     if (_cardioDuration.inSeconds > 0) {
-      if (mounted)
+      if (mounted) {
         setState(() => _cardioDuration -= const Duration(seconds: 1));
+      }
     } else {
       _cardioTimer?.cancel();
       _completeWorkoutSession();

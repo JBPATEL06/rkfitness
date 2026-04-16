@@ -111,10 +111,6 @@ class _HomePageState extends State<HomePage> {
           .eq('user_id', userEmail)
           .eq('day_of_week', day);
 
-      if (response is! List) {
-        return <WorkoutTableModel>[];
-      }
-
       final List<WorkoutTableModel> scheduledWorkouts = (response as List<dynamic>)
           .whereType<Map<String, dynamic>>()
           .map((row) {

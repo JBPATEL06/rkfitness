@@ -36,28 +36,28 @@ class Weekdays extends StatelessWidget {
             ButtonSegment<Days>(value: Days.SUN, label: Text('SUN')),
           ],
           style: ButtonStyle(
-            textStyle: MaterialStateProperty.resolveWith<TextStyle>((Set<MaterialState> states) {
+            textStyle: WidgetStateProperty.resolveWith<TextStyle>((Set<WidgetState> states) {
               return TextStyle(fontSize: 14.sp); // CONVERTED Text Size
             }),
-            backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-              if (states.contains(MaterialState.selected)) {
+            backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+              if (states.contains(WidgetState.selected)) {
                 return Colors.red;
               }
               return Colors.transparent;
             }),
-            foregroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-              if (states.contains(MaterialState.selected)) {
+            foregroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+              if (states.contains(WidgetState.selected)) {
                 return Colors.white;
               }
               return Colors.black;
             }),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(13.r), // CONVERTED
               ),
             ),
-            side: MaterialStateProperty.all<BorderSide>(BorderSide.none),
-            padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h)),
+            side: WidgetStateProperty.all<BorderSide>(BorderSide.none),
+            padding: WidgetStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h)),
           ),
           showSelectedIcon: false,
         ),

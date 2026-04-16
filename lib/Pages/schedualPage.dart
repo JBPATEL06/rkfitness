@@ -140,11 +140,11 @@ class _SchedualPageState extends State<SchedualPage> {
                 });
               },
               style: ButtonStyle(
-                foregroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-                  return states.contains(MaterialState.selected) ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
+                foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                  return states.contains(WidgetState.selected) ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
                 }),
-                backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-                  return states.contains(MaterialState.selected) ? theme.colorScheme.primary : theme.inputDecorationTheme.fillColor!;
+                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                  return states.contains(WidgetState.selected) ? theme.colorScheme.primary : theme.inputDecorationTheme.fillColor!;
                 }),
               ),
             ),

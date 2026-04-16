@@ -109,10 +109,10 @@ class _UsersPageState extends State<UsersPage> {
                   TextField(controller: heightController, decoration: const InputDecoration(labelText: 'Height (cm)'), keyboardType: TextInputType.number),
                   SizedBox(height: 15.h),
                   DropdownButtonFormField<String>(
-                    value: selectedGender,
+                    initialValue: selectedGender,
                     decoration: const InputDecoration(labelText: 'Gender'),
                     items: ['Male', 'Female', 'Other']
-                        .map((label) => DropdownMenuItem(child: Text(label), value: label))
+                        .map((label) => DropdownMenuItem(value: label, child: Text(label)))
                         .toList(),
                     onChanged: (value) => setState(() => selectedGender = value),
                   ),

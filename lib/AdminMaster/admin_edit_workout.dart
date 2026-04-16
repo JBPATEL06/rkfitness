@@ -192,7 +192,7 @@ class _EditWorkoutPageState extends State<EditWorkoutPage> {
             _buildTextField(controller: _nameController, labelText: 'Name'),
             SizedBox(height: 20.h),
             DropdownButtonFormField<String>(
-              value: _selectedWorkoutType,
+              initialValue: _selectedWorkoutType,
               decoration: const InputDecoration(
                 labelText: 'Workout Type',
                 border: OutlineInputBorder(),

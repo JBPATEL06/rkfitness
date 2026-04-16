@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  Map<String, List<WorkoutTableModel>> _workouts = {};
+  final Map<String, List<WorkoutTableModel>> _workouts = {};
   bool _isLoading = false;
   String? _error;
 

@@ -32,7 +32,7 @@ class WorkoutGridItem extends StatelessWidget {
     Widget imageWidget = useNetworkImage
         ? FadeInImage.assetNetwork(
             placeholder: 'assets/images/Rku_Logo.png', // placeholder asset
-            image: gifUrl!,
+            image: gifUrl,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,

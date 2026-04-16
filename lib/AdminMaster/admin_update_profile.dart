@@ -161,14 +161,14 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                 enabled: false),
             SizedBox(height: 20.h),
             DropdownButtonFormField<String>(
-              value: _selectedGender,
+              initialValue: _selectedGender,
               decoration: const InputDecoration(
                 labelText: 'Gender',
               ),
               items: ['Male', 'Female', 'Other']
                   .map((label) => DropdownMenuItem(
-                child: Text(label),
                 value: label,
+                child: Text(label),
               ))
                   .toList(),
               onChanged: (value) {

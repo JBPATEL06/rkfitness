@@ -92,7 +92,7 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
       orderInDay: 99,
       customSets: workout.sets,
       customReps: workout.reps,
-      customDuration: int.tryParse(workout.duration?.split(':').last ?? '') ?? null,
+      customDuration: int.tryParse(workout.duration?.split(':').last ?? ''),
     );
 
     await _scheduleService.createScheduleWorkout(newScheduleEntry);
@@ -186,7 +186,7 @@ class _AddToSchedulePageState extends State<AddToSchedulePage> {
                                   fontSize: 14.sp),
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
